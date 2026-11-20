@@ -125,3 +125,8 @@
 .fl .cnt { align-self: flex-end; font-weight: 400; letter-spacing: 0; }
 .st-Draft { color: var(--h-sky); border-color: rgba(85, 182, 230, .5); background: rgba(85, 182, 230, .08); }
 .st-Approved { color: var(--champagne); border-color: var(--gold); background: rgba(213, 178, 106, .1); }
+
+.members-row { display: flex; flex-direction: column; gap: 8px; }
+.mchips { display: flex; flex-wrap: wrap; gap: 6px; }
+.mchip { font-size: 13px; font-weight: 700; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--line-soft); color: var(--text-3); transition: all .5s; }
+.mchip.lit { color: #1B1407; background: linear-gradient(180deg, #EBD196, #C99F4F); border-color: #F0D9A4; box-shadow: 0 0 14px rgba(213, 178, 106, .55); }

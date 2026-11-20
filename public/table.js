@@ -2,7 +2,7 @@
   const token = decodeURIComponent(location.pathname.split('/').filter(Boolean)[1] || '');
   const $ = (id) => document.getElementById(id);
   const KEY = 'xmas-idea-' + token;
-  let state = null; let editing = false; let vibe = '';
+  let state = null; let editing = false; let vibe = ''; let member = null; let other = false;
   const getKey = () => { try { return localStorage.getItem(KEY) || ''; } catch (_) { return ''; } };
   const setKey = (k) => { try { localStorage.setItem(KEY, k); } catch (_) {} };
   const show = (v) => ['loading', 'fatal', 'formView', 'doneView', 'songView'].forEach((x) => $(x).classList.toggle('hidden', x !== v));
@@ -17,6 +17,19 @@
     $('vibes').innerHTML = list.map((v) => `<button type="button" class="vibe" role="radio" aria-checked="${v === vibe}" data-v="${esc(v)}">${esc(v)}</button>`).join('');
   }
   $('vibes').addEventListener('click', (e) => { const b = e.target.closest('.vibe'); if (!b) return; vibe = vibe === b.dataset.v ? '' : b.dataset.v; renderVibes(state.vibes); });
+
+  function renderMembers() {
+    const ms = state.members || [];
+    $('whoField').classList.toggle('hidden', !ms.length);
+    $('nameField').classList.toggle('hidden', ms.length && !other);
+    $('members').innerHTML = ms.map((m) => `<button type="button" class="vibe" role="radio" aria-checked="${member === m.id}" data-m="${m.id}">${esc(m.name)}</button>`).join('')
+      + (ms.length ? `<button type="button" class="vibe ghost" role="radio" aria-checked="${other}" data-m="other">Not in the list</button>` : '');
+  }
+  $('members').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-m]'); if (!b) return;
+    if (b.dataset.m === 'other') { other = true; member = null; } else { member = +b.dataset.m; other = false; }
+    renderMembers(); if (other) $('name').focus();
+  });
 
   function render() {
     const s = state;
@@ -41,14 +54,15 @@
     show('formView');
   }
   async function load(first) {
-    try { state = await req('/api/t/' + encodeURIComponent(token)); if (first) renderVibes(state.vibes); if (first || !editing) render(); }
+    try { state = await req('/api/t/' + encodeURIComponent(token)); if (first) { renderVibes(state.vibes); renderMembers(); } if (first || !editing) render(); }
     catch (e) { if (first || e.status === 404) { $('fatalMsg').textContent = e.message; show('fatal'); } }
   }
   $('form').addEventListener('submit', async (ev) => {
     ev.preventDefault();
-    const body = { name: $('name').value.trim(), idea: ta.value.trim(), vibe };
+    const ms = state.members || [];
+    const body = { name: member ? '' : $('name').value.trim(), participantId: member, idea: ta.value.trim(), vibe };
     const m = $('formMsg'); m.classList.add('hidden');
-    let err = !body.name ? 'Please tell us your name.' : !body.idea ? 'Please give us an idea!' : clen(body.idea) > 160 ? 'Your idea is over 160 characters — keep it short and sweet.' : '';
+    let err = ms.length && !member && !other ? 'Tap your name first.' : !member && !body.name ? 'Please tell us your name.' : !body.idea ? 'Please give us an idea!' : clen(body.idea) > 160 ? 'Your idea is over 160 characters — keep it short and sweet.' : '';
     if (err) { m.textContent = err; m.classList.remove('hidden'); return; }
     const btn = $('submitBtn'); btn.disabled = true; const label = btn.textContent; btn.textContent = 'Sending…';
     try {
@@ -60,7 +74,7 @@
     finally { btn.disabled = false; btn.textContent = label; }
   });
   $('editBtn').addEventListener('click', () => {
-    editing = true; $('name').value = state.mine.name; ta.value = state.mine.idea; vibe = state.mine.vibe || ''; renderVibes(state.vibes); counter();
+    editing = true; $('name').value = state.mine.name; member = state.mine.participantId || null; other = !member && (state.members || []).length > 0; renderMembers(); ta.value = state.mine.idea; vibe = state.mine.vibe || ''; renderVibes(state.vibes); counter();
     $('cancelEdit').classList.remove('hidden'); $('submitBtn').textContent = 'Update My Idea'; show('formView');
   });
   $('cancelEdit').addEventListener('click', () => { editing = false; render(); });

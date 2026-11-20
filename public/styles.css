@@ -158,3 +158,5 @@ footer.foot .logos img.holding-logo { height: 20px !important; }
 .vibe { appearance: none; border: 1px solid var(--line-soft); background: rgba(5, 30, 37, .55); color: var(--text); font: inherit; font-size: 14px; font-weight: 700;
   padding: 10px 14px; border-radius: 999px; cursor: pointer; min-height: 44px; transition: all .15s; }
 .vibe[aria-checked="true"] { border-color: var(--gold); background: rgba(213, 178, 106, .16); color: var(--champagne); box-shadow: 0 0 0 2px rgba(213, 178, 106, .18); }
+.members .vibe { font-weight: 600; }
+.vibe.ghost { border-style: dashed; color: var(--text-2); font-weight: 600; }

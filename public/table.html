@@ -35,9 +35,13 @@
     <form id="form" class="card" novalidate>
       <p class="intro"><strong id="teamLine">Add your little piece of madness.</strong>
         A memory, a situation, a funny line &mdash; anything goes. The AI will turn your team&rsquo;s ideas into one song.</p>
-      <div class="field">
+      <div class="field" id="whoField">
+        <label>Who are you?</label>
+        <div class="vibes members" id="members" role="radiogroup"></div>
+      </div>
+      <div class="field" id="nameField">
         <label for="name">Your name</label>
-        <input type="text" id="name" maxlength="40" autocomplete="given-name" placeholder="e.g. Laura" required>
+        <input type="text" id="name" maxlength="40" autocomplete="given-name" placeholder="e.g. Laura">
       </div>
       <div class="field">
         <label for="idea">Give us an idea!</label>

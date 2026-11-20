@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#051E25">
+<meta name="robots" content="noindex, nofollow">
+<title>Team Board · LFG+Zest Christmas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Mulish:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css">
+<link rel="icon" href="/brand/favicon.svg">
+<style>
+  html, body { min-height: 100%; }
+  .board { position: relative; z-index: 1; padding: 3vh 3vw 4vh; max-width: 1800px; margin: 0 auto; }
+  .bhead { text-align: center; }
+  .bhead .logos { display: flex; justify-content: center; gap: 16px; } .bhead .logos img { height: clamp(36px, 5vh, 60px); }
+  .bhead h1 { font-size: clamp(36px, 5vw, 84px); color: var(--champagne); margin-top: 1.5vh; line-height: 1.05; }
+  .bhead h1 em { color: var(--gold); }
+  .bhead p { color: var(--text-2); font-size: clamp(15px, 1.4vw, 24px); margin: 1vh 0 0; }
+  .teams { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2vw; margin-top: 4vh; }
+  .tcol { border: 1px solid var(--line); border-radius: 16px; padding: 2.4vh 1.6vw 3vh; background: linear-gradient(180deg, rgba(16, 58, 68, .7), rgba(8, 42, 51, .7)); text-align: center; }
+  .tcol h2 { font-size: clamp(26px, 3vw, 52px); color: var(--champagne); font-style: italic; }
+  .tcol .sub { color: var(--gold); font-size: clamp(13px, 1.1vw, 18px); letter-spacing: .24em; text-transform: uppercase; font-weight: 800; margin-top: .6vh; min-height: 1.4em; }
+  .names { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 2.4vh; }
+  .nm { font-family: var(--font-display); font-size: clamp(17px, 1.7vw, 30px); padding: .45em 1em; border-radius: 999px; border: 1px solid rgba(226, 237, 239, .14);
+    color: rgba(238, 243, 242, .38); transition: color .8s, background .8s, box-shadow .8s, border-color .8s; }
+  .nm.lit { color: #1B1407; background: linear-gradient(180deg, #F0D8A0, #C99F4F); border-color: #F6E3B8; box-shadow: 0 0 28px rgba(213, 178, 106, .7), 0 0 4px rgba(255, 240, 200, .9) inset; }
+  .nm.pop { animation: pop 1.6s ease; }
+  @keyframes pop { 0% { transform: scale(1); } 25% { transform: scale(1.25); box-shadow: 0 0 60px rgba(255, 220, 140, 1); } 100% { transform: scale(1); } }
+  .empty { color: var(--text-3); font-style: italic; }
+  .foot2 { position: fixed; right: 16px; bottom: 12px; z-index: 2; display: flex; gap: 8px; }
+</style>
+</head>
+<body>
+<div class="board">
+  <div class="bhead">
+    <div class="logos"><img src="/brand/lfg-zest-white.png" alt="LFG+Zest"><img src="/brand/lfa-white.png" alt="LFA"></div>
+    <h1>Let&rsquo;s Make <em>a Song!</em></h1>
+    <p>Scan your team&rsquo;s QR and add your little piece of madness &mdash; watch your name light up.</p>
+  </div>
+  <div class="teams" id="teams"><div class="spinner"></div></div>
+</div>
+<div class="foot2"><a class="btn btn-sm btn-ghost" href="/admin#songs">← Dashboard</a><button class="btn btn-sm" onclick="document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()">Full screen</button></div>
+<script src="/common.js"></script>
+<script>
+(function () {
+  const lit = new Set(); let first = true; let sig = '';
+  const norm = (s) => String(s || '').trim().toLowerCase();
+  async function load() {
+    let S; try { S = await api('/api/admin/state'); } catch (e) { if (e.status === 401) location.href = '/admin'; return; }
+    const s = JSON.stringify([S.tables.map((t) => [t.id, t.number, t.name, t.locked]), S.participants, S.contributions.map((c) => [c.participant_id, c.table_id, c.name])]);
+    if (s === sig) return; sig = s;
+    const did = (p) => S.contributions.some((c) => c.participant_id === p.id || (!c.participant_id && c.table_id === p.table_id && norm(c.name) === norm(p.name)));
+    const fresh = [];
+    document.getElementById('teams').innerHTML = S.tables.map((t) => {
+      const ms = S.participants.filter((p) => p.table_id === t.id).sort((a, b) => a.name.localeCompare(b.name));
+      const extra = S.contributions.filter((c) => c.table_id === t.id && !c.participant_id && !ms.some((p) => norm(p.name) === norm(c.name)));
+      const names = ms.map((p) => { const on = did(p); const k = 'p' + p.id; if (on && !lit.has(k)) { if (!first) fresh.push(k); lit.add(k); } return `<span class="nm ${on ? 'lit' : ''}" data-k="${k}">${esc(p.name)}</span>`; })
+        .concat(extra.map((c) => { const k = 'c' + c.id; if (!lit.has(k)) { if (!first) fresh.push(k); lit.add(k); } return `<span class="nm lit" data-k="${k}">${esc(c.name)}</span>`; }));
+      return `<section class="tcol"><h2>Team ${t.number}${t.name ? ' · ' + esc(t.name) : ''}</h2>
+        <div class="sub">${t.locked ? '✦ Composing ✦' : ''}</div>
+        <div class="names">${names.join('') || '<span class="empty">Team members will appear here</span>'}</div></section>`;
+    }).join('');
+    fresh.forEach((k) => document.querySelector(`[data-k="${k}"]`)?.classList.add('pop'));
+    first = false;
+  }
+  load(); setInterval(() => { if (!document.hidden) load(); }, 3000);
+})();
+</script>
+</body>
+</html>

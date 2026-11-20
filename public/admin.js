@@ -53,6 +53,9 @@
   const editingIn = (el) => document.activeElement && el.contains(document.activeElement) && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
   const ideasOf = (id) => S.contributions.filter((c) => c.table_id === id);
   const dirty = new Set(); // team ids with unsaved proposal edits
+  const norm = (s) => String(s || '').trim().toLowerCase();
+  const membersOf = (id) => S.participants.filter((p) => p.table_id === id).sort((a, b) => a.name.localeCompare(b.name));
+  const hasContributed = (p) => S.contributions.some((c) => c.participant_id === p.id || (!c.participant_id && c.table_id === p.table_id && norm(c.name) === norm(p.name)));
 
   function render(force) {
     renderStats();
@@ -93,6 +96,13 @@
     return `<div class="prod"><div class="blk-h"><span class="eyebrow">Suno · pick the version</span>${karaoke}</div>
       <div class="vers">${vers}</div><audio controls preload="none" src="${esc(src)}"></audio></div>`;
   }
+  function membersHtml(t) {
+    const ms = membersOf(t.id);
+    if (!ms.length) return '<div class="members-row"><span class="tiny">No members yet — assign guests to this team in <a href="#seating" data-goseat>Seating</a>.</span></div>';
+    const lit = ms.filter(hasContributed).length;
+    return `<div class="members-row"><span class="eyebrow">Members · ${lit}/${ms.length} contributed</span>
+      <div class="mchips">${ms.map((p) => `<span class="mchip ${hasContributed(p) ? 'lit' : ''}">${esc(p.name)}</span>`).join('')}</div></div>`;
+  }
   function teamHtml(t) {
     const ideas = ideasOf(t.id); const s = subByTable(t.id);
     const pending = !!t.gen_requested_at;
@@ -120,6 +130,7 @@
     return `<article class="song team" data-t="${t.id}">
       <div class="song-head"><div><div class="song-table">${esc(tLabel(t))}</div><h3>${s ? esc(s.title) : ideas.length + ' idea' + (ideas.length === 1 ? '' : 's')}</h3></div>
         <button class="btn btn-sm lockbtn ${t.locked ? 'locked' : ''}" data-lock>${t.locked ? '🔒 Ideas closed · Reopen' : 'Close ideas'}</button></div>
+      ${membersHtml(t)}
       <details class="ideas" ${s ? '' : 'open'}><summary><span class="eyebrow">Ideas (${ideas.length})</span>${Object.entries(vibes).map(([v, n]) => `<span class="chip">${esc(v)} ×${n}</span>`).join('')}</summary><ul>${ideaList}</ul></details>
       <div class="gen">${pending
         ? `<span class="composing"><i></i>Claude is composing${s ? ' a new version' : ''}… (picked up by the producer loop)</span><button class="btn btn-sm btn-ghost" data-cancelgen>Cancel</button>`
@@ -135,7 +146,7 @@
     if (box.dataset.ids !== want) { box.innerHTML = S.tables.map((t) => `<div data-slot="${t.id}"></div>`).join(''); box.dataset.ids = want; force = true; }
     for (const t of S.tables) {
       const slot = box.querySelector(`[data-slot="${t.id}"]`);
-      const sig = JSON.stringify([t.locked, t.name, t.gen_requested_at, ideasOf(t.id), subByTable(t.id)]);
+      const sig = JSON.stringify([t.locked, t.name, t.gen_requested_at, ideasOf(t.id), subByTable(t.id), membersOf(t.id)]);
       if (!force && slot.dataset.sig === sig) continue;
       if (dirty.has(t.id) || editingIn(slot)) { slot.querySelector('.song')?.classList.add('stale'); continue; }
       const prevNew = slot.dataset.sig && JSON.parse(slot.dataset.sig)[4]?.generatedAt !== subByTable(t.id)?.generatedAt;
@@ -175,6 +186,7 @@
       }
       act(`/api/admin/submissions/${id}`, 'PATCH', { status: 'Approved' }, `Team ${t.number} approved — queued for Suno`);
     }
+    if (e.target.closest('[data-goseat]')) { e.preventDefault(); setTab('seating'); return; }
     const d = e.target.closest('[data-delidea]');
     if (d && confirm('Remove this idea?')) act(`/api/admin/contributions/${d.dataset.delidea}`, 'DELETE', undefined, 'Idea removed');
   });

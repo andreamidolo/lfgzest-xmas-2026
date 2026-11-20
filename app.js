@@ -105,7 +105,7 @@ async function tableByToken(token) {
   return rows[0] || null;
 }
 const parseProd = (p) => (typeof p === 'string' ? JSON.parse(p) : p || null);
-function pubIdea(c) { return c && { id: c.id, name: c.name, idea: c.idea, vibe: c.vibe, updatedAt: c.updated_at }; }
+function pubIdea(c) { return c && { id: c.id, name: c.name, idea: c.idea, vibe: c.vibe, participantId: c.participant_id, updatedAt: c.updated_at }; }
 async function myIdea(req, tableId) {
   const h = String(req.get('x-idea') || ''); const [id, tok] = h.split('.');
   if (!id || !tok) return null;
@@ -114,11 +114,16 @@ async function myIdea(req, tableId) {
   if (!c || c.edit_token.length !== tok.length || !crypto.timingSafeEqual(Buffer.from(c.edit_token), Buffer.from(tok))) return null;
   return c;
 }
-function readIdea(b) {
-  const d = { name: str(b.name), idea: str(b.idea), vibe: VIBES.includes(b.vibe) ? b.vibe : '' };
+async function readIdea(b, tableId) {
+  const d = { name: str(b.name), idea: str(b.idea), vibe: VIBES.includes(b.vibe) ? b.vibe : '', participantId: null };
+  const pid = parseInt(b.participantId, 10);
+  if (pid) { // a team member picked their own name
+    const { rows } = await q('SELECT id, name FROM participants WHERE id=$1 AND table_id=$2', [pid, tableId]);
+    if (rows[0]) { d.participantId = rows[0].id; d.name = rows[0].name; }
+  }
   if (!d.name) return { err: 'Please tell us your name.' };
   if (!d.idea) return { err: 'Please give us an idea — a memory, a situation or a funny line.' };
-  if (charLen(d.name) > LIMITS.guestName) return { err: `Name is too long (max ${LIMITS.guestName} characters).` };
+  if (!d.participantId && charLen(d.name) > LIMITS.guestName) return { err: `Name is too long (max ${LIMITS.guestName} characters).` };
   if (charLen(d.idea) > LIMITS.idea) return { err: `Your idea is too long (max ${LIMITS.idea} characters).` };
   return { d };
 }
@@ -132,18 +137,19 @@ app.get('/api/t/:token', wrap(async (req, res) => {
   const s = rows[0];
   // The song is revealed to the team only once the organizer has approved it.
   const song = s && s.status !== 'Draft' ? { title: s.title, concept: s.concept, explanation: s.explanation, live: LIVE.includes(s.status) } : null;
-  res.json({ team: { number: t.number, name: t.name, open: !t.locked }, mine: pubIdea(mine), song, vibes: VIBES, limits: { name: LIMITS.guestName, idea: LIMITS.idea } });
+  const { rows: members } = await q('SELECT id, name FROM participants WHERE table_id=$1 ORDER BY lower(name)', [t.id]);
+  res.json({ team: { number: t.number, name: t.name, open: !t.locked }, members, mine: pubIdea(mine), song, vibes: VIBES, limits: { name: LIMITS.guestName, idea: LIMITS.idea } });
 }));
 
 app.post('/api/t/:token/ideas', wrap(async (req, res) => {
   const t = await tableByToken(req.params.token);
   if (!t) return bad(res, 'This team link is not valid.', 404);
   if (t.locked) return bad(res, 'Ideas for this team are closed — the AI is already composing!', 423);
-  const { d, err } = readIdea(req.body || {}); if (err) return bad(res, err);
+  const { d, err } = await readIdea(req.body || {}, t.id); if (err) return bad(res, err);
   const { rows: cnt } = await q('SELECT COUNT(*)::int AS n FROM contributions WHERE table_id=$1', [t.id]);
   if (cnt[0].n >= 80) return bad(res, 'This team already has plenty of ideas!', 429);
   const tok = newToken();
-  const { rows } = await q('INSERT INTO contributions (table_id, name, idea, vibe, edit_token) VALUES ($1,$2,$3,$4,$5) RETURNING *', [t.id, d.name, d.idea, d.vibe, tok]);
+  const { rows } = await q('INSERT INTO contributions (table_id, name, idea, vibe, edit_token, participant_id) VALUES ($1,$2,$3,$4,$5,$6) RETURNING *', [t.id, d.name, d.idea, d.vibe, tok, d.participantId]);
   res.json({ ok: true, mine: pubIdea(rows[0]), key: `${rows[0].id}.${tok}` });
 }));
 
@@ -152,8 +158,8 @@ app.put('/api/t/:token/ideas/mine', wrap(async (req, res) => {
   if (!t) return bad(res, 'This team link is not valid.', 404);
   if (t.locked) return bad(res, 'Ideas for this team are closed — the AI is already composing!', 423);
   const c = await myIdea(req, t.id); if (!c) return bad(res, 'We could not find your idea on this device.', 404);
-  const { d, err } = readIdea(req.body || {}); if (err) return bad(res, err);
-  const { rows } = await q('UPDATE contributions SET name=$2, idea=$3, vibe=$4, updated_at=now() WHERE id=$1 RETURNING *', [c.id, d.name, d.idea, d.vibe]);
+  const { d, err } = await readIdea(req.body || {}, t.id); if (err) return bad(res, err);
+  const { rows } = await q('UPDATE contributions SET name=$2, idea=$3, vibe=$4, participant_id=$5, updated_at=now() WHERE id=$1 RETURNING *', [c.id, d.name, d.idea, d.vibe, d.participantId]);
   res.json({ ok: true, mine: pubIdea(rows[0]) });
 }));
 
@@ -206,7 +212,7 @@ app.get('/api/admin/state', wrap(async (req, res) => {
     q('SELECT id, number, name, capacity, token, locked, gen_requested_at FROM event_tables ORDER BY number'),
     q('SELECT id, name, table_id, seat FROM participants ORDER BY lower(name)'),
     q('SELECT * FROM submissions'),
-    q('SELECT id, table_id, name, idea, vibe, created_at, updated_at FROM contributions ORDER BY created_at'),
+    q('SELECT id, table_id, participant_id, name, idea, vibe, created_at, updated_at FROM contributions ORDER BY created_at'),
   ]);
   const base = baseUrl(req);
   const tables = t.rows.map((r) => ({ ...r, url: `${base}/t/${r.token}` }));
@@ -436,6 +442,7 @@ app.get('/', page('index.html'));
 app.get('/t/:token', page('table.html'));
 app.get('/admin', page('admin.html'));
 app.get('/admin/print-qr', page('print-qr.html'));
+app.get('/admin/board', page('board.html'));
 app.get('/admin/karaoke/:tableId', page('karaoke.html'));
 app.get('/karaoke', page('karaoke-list.html'));
 app.get('/karaoke/:team', page('karaoke.html'));
