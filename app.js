@@ -209,7 +209,7 @@ function subOut(r) {
 // ---------- admin: state ----------
 app.get('/api/admin/state', wrap(async (req, res) => {
   const [t, p, s, c] = await Promise.all([
-    q('SELECT id, number, name, capacity, token, locked, gen_requested_at FROM event_tables ORDER BY number'),
+    q('SELECT id, number, name, capacity, token, locked, gen_requested_at, applause_score, applause_peak, applause_at FROM event_tables ORDER BY number'),
     q('SELECT id, name, table_id, seat FROM participants ORDER BY lower(name)'),
     q('SELECT * FROM submissions'),
     q('SELECT id, table_id, participant_id, name, idea, vibe, created_at, updated_at FROM contributions ORDER BY created_at'),
@@ -363,6 +363,19 @@ app.get('/api/admin/queue', wrap(async (req, res) => {
     .map((r) => ({ teamId: r.table_id, team: t.rows.find((x) => x.id === r.table_id).number, revision: r.revision, title: r.title, lyrics: r.lyrics, style: r.style }));
   res.json({ generate, produce });
 }));
+// Applause meter: only the resulting score is stored, never audio.
+app.put('/api/admin/teams/:id/applause', wrap(async (req, res) => {
+  const b = req.body || {}; const id = parseInt(req.params.id, 10);
+  if (b.score === null) { await q('UPDATE event_tables SET applause_score=NULL, applause_peak=NULL, applause_at=NULL WHERE id=$1', [id]); return res.json({ ok: true }); }
+  const score = Number(b.score), peak = Number(b.peak);
+  if (!(score >= 0 && score <= 100)) return bad(res, 'Invalid score.');
+  await q('UPDATE event_tables SET applause_score=$2, applause_peak=$3, applause_at=now() WHERE id=$1', [id, Math.round(score * 10) / 10, peak >= 0 && peak <= 100 ? Math.round(peak * 10) / 10 : null]);
+  res.json({ ok: true });
+}));
+app.delete('/api/admin/applause', wrap(async (req, res) => {
+  await q('UPDATE event_tables SET applause_score=NULL, applause_peak=NULL, applause_at=NULL');
+  res.json({ ok: true });
+}));
 app.delete('/api/admin/contributions/:id', wrap(async (req, res) => {
   await q('DELETE FROM contributions WHERE id=$1', [parseInt(req.params.id, 10)]);
   res.json({ ok: true });
@@ -443,6 +456,7 @@ app.get('/t/:token', page('table.html'));
 app.get('/admin', page('admin.html'));
 app.get('/admin/print-qr', page('print-qr.html'));
 app.get('/admin/board', page('board.html'));
+app.get('/admin/applause', page('applause.html'));
 app.get('/admin/karaoke/:tableId', page('karaoke.html'));
 app.get('/karaoke', page('karaoke-list.html'));
 app.get('/karaoke/:team', page('karaoke.html'));

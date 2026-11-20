@@ -45,3 +45,12 @@ Never generate for a team that was not requested, never produce a song that is n
 - Shared: `/karaoke` (everyone) and `/karaoke/<team>` (big screen, words highlighted in time).
 - Organizer preview: `/admin/karaoke/<teamId>` (any status).
 - Keys: Space play/pause · F full screen · ←/→ shift lyrics ±0.2 s.
+
+## Finale: Applause Meter
+`/admin/applause` (organizer laptop on the projector, opened from the published https URL).
+1. **Enable microphone** (allow access). Auto-gain, noise suppression and echo cancellation are switched off where the browser allows it.
+2. Optional **Test** to see the level.
+3. After each song: stop the music → **Measure Team N** (or press 1/2/3) → 3 s countdown → 7 s of applause.
+   Score = average intensity over the 7 s, mapped to 0–100 (comparative, not calibrated dB). Only the number is stored, never audio.
+4. **Reveal winner** (or R): bars grow, crown + confetti. Differences under 0.5 pts = tie.
+Same mic, same spot, same distance for all three teams.

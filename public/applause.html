@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#051E25">
+<meta name="robots" content="noindex, nofollow">
+<title>Applause Meter · LFG+Zest Christmas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Mulish:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css">
+<link rel="icon" href="/brand/favicon.svg">
+<style>
+  html, body { min-height: 100%; }
+  .wrapA { position: relative; z-index: 1; max-width: 1500px; margin: 0 auto; padding: 3vh 4vw 120px; text-align: center; }
+  .logos { display: flex; justify-content: center; gap: 16px; } .logos img { height: clamp(34px, 5vh, 56px); }
+  h1 { font-size: clamp(36px, 5.4vw, 92px); color: var(--champagne); line-height: 1.04; margin-top: 1.2vh; }
+  h1 em { color: var(--gold); }
+  .lead { color: var(--text-2); font-size: clamp(14px, 1.3vw, 22px); margin: 1vh 0 0; }
+  /* live meter */
+  .meter { margin: 4vh auto 0; max-width: 1100px; display: none; }
+  body.measuring .meter, body.testing .meter { display: block; }
+  .mlabel { font-family: var(--font-display); font-style: italic; color: var(--gold); font-size: clamp(24px, 3vw, 52px); }
+  .count { font-family: var(--font-display); font-size: clamp(120px, 22vw, 360px); line-height: 1; color: var(--champagne); text-shadow: 0 0 60px rgba(213, 178, 106, .6); }
+  .bar { position: relative; height: clamp(46px, 8vh, 90px); border-radius: 999px; background: rgba(226, 237, 239, .07); border: 1px solid var(--line); overflow: hidden; margin-top: 3vh; }
+  .bar i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 999px;
+    background: linear-gradient(90deg, #0E6E80 0%, #2E8296 35%, #D5B26A 70%, #E8604C 100%); background-size: 1100px 100%; transition: width .06s linear; box-shadow: 0 0 40px rgba(213, 178, 106, .5); }
+  .bar b { position: absolute; top: -6px; bottom: -6px; width: 3px; background: var(--champagne); left: 0; transition: left .2s; box-shadow: 0 0 10px var(--champagne); }
+  .live { display: flex; justify-content: space-between; margin-top: 1.6vh; color: var(--text-2); font-size: clamp(14px, 1.3vw, 22px); }
+  .live strong { font-family: var(--font-display); color: var(--champagne); font-size: clamp(40px, 5vw, 90px); font-weight: 500; line-height: 1; }
+  .timer { height: 6px; border-radius: 6px; background: rgba(226, 237, 239, .08); margin-top: 2vh; overflow: hidden; } .timer i { display: block; height: 100%; width: 0; background: var(--gold); }
+  /* scoreboard */
+  .scores { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 2vw; margin-top: 5vh; align-items: end; }
+  body.measuring .scores, body.measuring .controls { display: none; }
+  .col { border: 1px solid var(--line); border-radius: 16px; padding: 2.4vh 1.4vw; background: linear-gradient(180deg, rgba(16, 58, 68, .7), rgba(8, 42, 51, .7)); position: relative; transition: transform .6s, box-shadow .6s; }
+  .col h2 { font-size: clamp(24px, 2.6vw, 46px); color: var(--champagne); font-style: italic; }
+  .col .song { color: var(--text-2); font-size: clamp(13px, 1vw, 17px); min-height: 1.4em; margin-top: .4vh; }
+  .vbar { height: clamp(140px, 26vh, 320px); margin: 2.4vh auto 1.4vh; width: 46%; border-radius: 12px; background: rgba(226, 237, 239, .06); position: relative; overflow: hidden; border: 1px solid var(--line-soft); }
+  .vbar i { position: absolute; left: 0; right: 0; bottom: 0; height: 0; background: linear-gradient(0deg, #0E6E80, #D5B26A); transition: height 1.6s cubic-bezier(.2, .8, .2, 1); }
+  .pts { font-family: var(--font-display); font-size: clamp(34px, 4vw, 72px); color: var(--champagne); line-height: 1; }
+  .pts small { font-size: .4em; color: var(--text-3); font-family: var(--font-body); font-weight: 700; letter-spacing: .1em; }
+  .col .btn { margin-top: 1.6vh; }
+  .col.win { transform: translateY(-14px) scale(1.04); border-color: var(--gold); box-shadow: 0 0 0 2px var(--gold), 0 30px 80px -20px rgba(213, 178, 106, .7); }
+  .col .crown { position: absolute; top: -34px; left: 50%; transform: translateX(-50%) scale(0); font-size: 56px; transition: transform .6s cubic-bezier(.3, 1.6, .5, 1); }
+  .col.win .crown { transform: translateX(-50%) scale(1); }
+  .winner { margin-top: 2vh; } .winner:empty { display: none; }
+  body.revealed .lead { display: none; } body.revealed .controls { opacity: 0; transition: opacity .4s; } body.revealed .controls:hover { opacity: 1; }
+  .winner h3 { font-size: clamp(40px, 6vw, 110px); color: var(--gold); font-style: italic; line-height: 1.05; }
+  .winner p { color: var(--champagne); font-size: clamp(16px, 1.6vw, 28px); margin: 1vh 0 0; letter-spacing: .1em; }
+  .controls { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; display: flex; gap: 8px; justify-content: center; align-items: center; flex-wrap: wrap; padding: 12px 16px; background: rgba(5, 30, 37, .9); border-top: 1px solid var(--line); }
+  .controls select { width: auto; padding: 8px 10px; font-size: 13px; max-width: 240px; }
+  .mini { width: 120px; height: 8px; border-radius: 8px; background: rgba(226, 237, 239, .08); overflow: hidden; } .mini i { display: block; height: 100%; width: 0; background: var(--ok); }
+  .note { font-size: 12px; color: var(--text-3); max-width: 560px; }
+  canvas#confetti { position: fixed; inset: 0; z-index: 4; pointer-events: none; }
+</style>
+</head>
+<body>
+<canvas id="confetti"></canvas>
+<main class="wrapA">
+  <div class="logos"><img src="/brand/lfg-zest-white.png" alt="LFG+Zest"><img src="/brand/lfa-white.png" alt="LFA"></div>
+  <p class="eyebrow" style="margin-top:2vh">LFG+Zest Christmas Music Battle</p>
+  <h1>The <em>Applause</em> Meter</h1>
+  <p class="lead" id="lead">The loudest applause of the night wins.</p>
+
+  <section class="meter" id="meter">
+    <div class="mlabel" id="mLabel"></div>
+    <div class="count" id="count"></div>
+    <div id="liveBox">
+      <div class="bar"><i id="barFill"></i><b id="barAvg"></b></div>
+      <div class="live"><span>Live</span><span>Average&nbsp;<strong id="avgTxt">0</strong></span></div>
+      <div class="timer"><i id="timer"></i></div>
+    </div>
+  </section>
+
+  <div class="winner" id="winner"></div>
+  <section class="scores" id="scores"></section>
+</main>
+
+<div class="controls" id="controls">
+  <a class="btn btn-sm btn-ghost" href="/admin#songs">← Dashboard</a>
+  <button class="btn btn-sm btn-gold" id="enable">🎙 Enable microphone</button>
+  <select id="mic" class="hidden" aria-label="Microphone"></select>
+  <span class="mini" title="Room level"><i id="mini"></i></span>
+  <button class="btn btn-sm" id="test" disabled>Test</button>
+  <button class="btn btn-sm btn-gold" id="reveal">🏆 Reveal winner</button>
+  <button class="btn btn-sm btn-ghost" id="reset">Reset scores</button>
+  <span class="note">Same microphone, same spot, music stopped. 3 s countdown + 7 s of applause. Comparative score 0–100, not calibrated decibels. No audio is recorded.</span>
+</div>
+
+<script src="/common.js"></script>
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const COUNTDOWN = 3, MEASURE = 7;
+  // dBFS window mapped to 0–100. Applause near a laptop is typically −35…−8 dBFS.
+  const DB_MIN = -55, DB_MAX = -6;
+  let S = null, ctx = null, analyser = null, stream = null, buf = null, raf = 0, level = 0, busy = false, testing = false;
+
+  const toScore = (rms) => { const db = 20 * Math.log10(Math.max(rms, 1e-7)); return Math.max(0, Math.min(100, ((db - DB_MIN) / (DB_MAX - DB_MIN)) * 100)); };
+  function readLevel() {
+    analyser.getFloatTimeDomainData(buf);
+    let sum = 0; for (let i = 0; i < buf.length; i++) sum += buf[i] * buf[i];
+    return toScore(Math.sqrt(sum / buf.length));
+  }
+  function ambient() {
+    if (analyser && !busy) { level = level * 0.7 + readLevel() * 0.3; $('mini').style.width = level + '%'; if (testing) { $('barFill').style.width = level + '%'; $('avgTxt').textContent = Math.round(level); } }
+    raf = requestAnimationFrame(ambient);
+  }
+
+  async function enable(deviceId) {
+    try {
+      if (stream) stream.getTracks().forEach((t) => t.stop());
+      // Ask the browser to switch off processing that would flatten loud applause.
+      stream = await navigator.mediaDevices.getUserMedia({ audio: { deviceId: deviceId ? { exact: deviceId } : undefined,
+        echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+      ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
+      await ctx.resume();
+      const src = ctx.createMediaStreamSource(stream);
+      analyser = ctx.createAnalyser(); analyser.fftSize = 2048; buf = new Float32Array(analyser.fftSize);
+      src.connect(analyser); // not connected to the speakers, nothing is recorded
+      const devs = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === 'audioinput');
+      const cur = stream.getAudioTracks()[0].getSettings().deviceId;
+      $('mic').innerHTML = devs.map((d, i) => `<option value="${esc(d.deviceId)}" ${d.deviceId === cur ? 'selected' : ''}>${esc(d.label || 'Microphone ' + (i + 1))}</option>`).join('');
+      $('mic').classList.toggle('hidden', devs.length < 2);
+      const agc = stream.getAudioTracks()[0].getSettings().autoGainControl;
+      $('enable').textContent = '🎙 Mic on' + (agc ? ' (auto-gain could not be disabled)' : ''); $('enable').classList.remove('btn-gold');
+      $('test').disabled = false; renderScores();
+      if (!raf) ambient();
+    } catch (e) { toast('Microphone not available: ' + (e.message || e.name), true); }
+  }
+  $('enable').onclick = () => enable(); $('mic').onchange = () => enable($('mic').value);
+  $('test').onclick = () => { testing = !testing; document.body.classList.toggle('testing', testing); $('test').textContent = testing ? 'Stop test' : 'Test';
+    $('mLabel').textContent = testing ? 'Microphone test — clap!' : ''; $('count').textContent = ''; $('liveBox').classList.remove('hidden'); };
+
+  async function load() { S = await api('/api/admin/state'); renderScores(); }
+  const sub = (id) => S.submissions.find((s) => s.tableId === id);
+  function renderScores(win) {
+    if (!S) return;
+    $('scores').innerHTML = S.tables.map((t) => {
+      const sc = t.applause_score; const s = sub(t.id);
+      return `<div class="col ${win && win.includes(t.id) ? 'win' : ''}" data-t="${t.id}"><div class="crown">🏆</div>
+        <h2>Team ${t.number}</h2><div class="song">${s ? esc(s.title) : ''}</div>
+        <div class="vbar"><i style="height:${win ? sc || 0 : sc != null ? sc : 0}%"></i></div>
+        <div class="pts">${sc != null ? Math.round(sc) : '–'} <small>PTS</small></div>
+        <button class="btn btn-sm ${sc != null ? '' : 'btn-gold'}" data-measure="${t.id}" ${analyser ? '' : 'disabled'}>${sc != null ? '↻ Measure again' : '👏 Measure Team ' + t.number}</button></div>`;
+    }).join('');
+  }
+  $('scores').addEventListener('click', (e) => { const b = e.target.closest('[data-measure]'); if (b) measure(+b.dataset.measure); });
+
+  async function measure(id) {
+    if (busy || !analyser) return;
+    const t = S.tables.find((x) => x.id === id);
+    if (t.applause_score != null && !confirm(`Team ${t.number} already has ${Math.round(t.applause_score)} pts. Measure again?`)) return;
+    busy = true; testing = false; document.body.classList.remove('testing', 'revealed'); document.body.classList.add('measuring'); $('winner').innerHTML = '';
+    $('mLabel').textContent = `Team ${t.number}` + (sub(id) ? ' — ' + sub(id).title : '');
+    $('liveBox').classList.add('hidden'); $('barFill').style.width = '0'; $('barAvg').style.left = '0'; $('avgTxt').textContent = '0'; $('timer').style.width = '0';
+    for (let n = COUNTDOWN; n > 0; n--) { $('count').textContent = n; await new Promise((r) => setTimeout(r, 1000)); }
+    $('count').textContent = '👏'; $('liveBox').classList.remove('hidden');
+    let sum = 0, frames = 0, peak = 0, smooth = 0; const t0 = performance.now();
+    await new Promise((done) => {
+      (function frame() {
+        const el = (performance.now() - t0) / 1000;
+        const v = readLevel(); sum += v; frames++; smooth = smooth * 0.6 + v * 0.4; peak = Math.max(peak, smooth);
+        const avg = sum / frames;
+        $('barFill').style.width = smooth + '%'; $('barAvg').style.left = avg + '%'; $('avgTxt').textContent = Math.round(avg);
+        $('timer').style.width = Math.min(100, (el / MEASURE) * 100) + '%';
+        if (el < MEASURE) requestAnimationFrame(frame); else done();
+      })();
+    });
+    const score = sum / Math.max(frames, 1);
+    $('count').textContent = Math.round(score);
+    try { await api(`/api/admin/teams/${id}/applause`, { method: 'PUT', body: { score, peak } }); } catch (e) { toast('Could not save: ' + e.message, true); }
+    await new Promise((r) => setTimeout(r, 2200));
+    document.body.classList.remove('measuring'); busy = false; $('count').textContent = '';
+    await load(); toast(`Team ${t.number}: ${Math.round(score)} pts`);
+  }
+
+  function reveal() {
+    const done = S.tables.filter((t) => t.applause_score != null);
+    if (!done.length) return toast('Measure at least one team first', true);
+    if (done.length < S.tables.length && !confirm('Not all teams have been measured. Reveal anyway?')) return;
+    const best = Math.max(...done.map((t) => t.applause_score));
+    const win = done.filter((t) => best - t.applause_score < 0.5).map((t) => t.id);
+    // bars grow from zero, then the crown
+    $('scores').querySelectorAll('.vbar i').forEach((i) => (i.style.height = '0'));
+    $('winner').innerHTML = ''; requestAnimationFrame(() => setTimeout(() => {
+      renderScores([]); setTimeout(() => {
+        renderScores(win);
+        const names = win.map((id) => 'Team ' + S.tables.find((t) => t.id === id).number);
+        $('winner').innerHTML = `<h3>${names.length > 1 ? "It's a tie! " + names.join(' & ') : names[0] + ' Wins!'}</h3><p>The loudest applause of the night</p>`;
+        document.body.classList.add('revealed'); confetti();
+      }, 1800);
+    }, 50));
+  }
+  $('reveal').onclick = reveal;
+  $('reset').onclick = async () => { if (!confirm('Reset all applause scores?')) return; await api('/api/admin/applause', { method: 'DELETE' }); $('winner').innerHTML = ''; document.body.classList.remove('revealed'); await load(); };
+  document.addEventListener('keydown', (e) => {
+    if (busy || e.target.tagName === 'SELECT') return;
+    const n = parseInt(e.key, 10); const t = S && S.tables.find((x) => x.number === n);
+    if (t) measure(t.id);
+    if (e.key === 'r' || e.key === 'R') reveal();
+    if (e.key === 'f' || e.key === 'F') document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
+  });
+
+  function confetti() {
+    const c = $('confetti'), g = c.getContext('2d'); c.width = innerWidth; c.height = innerHeight;
+    const cols = ['#D5B26A', '#F3E6C8', '#B4232F', '#2E8296', '#ffffff'];
+    const ps = Array.from({ length: 220 }, () => ({ x: Math.random() * c.width, y: -20 - Math.random() * c.height * 0.6, vx: (Math.random() - 0.5) * 3, vy: 2 + Math.random() * 4, r: 4 + Math.random() * 6, a: Math.random() * 6, col: cols[Math.floor(Math.random() * cols.length)] }));
+    const t0 = performance.now();
+    (function f() {
+      g.clearRect(0, 0, c.width, c.height);
+      ps.forEach((p) => { p.x += p.vx; p.y += p.vy; p.a += 0.1; g.save(); g.translate(p.x, p.y); g.rotate(p.a); g.fillStyle = p.col; g.fillRect(-p.r / 2, -p.r / 4, p.r, p.r / 2); g.restore(); });
+      if (performance.now() - t0 < 7000) requestAnimationFrame(f); else g.clearRect(0, 0, c.width, c.height);
+    })();
+  }
+
+  load().catch((e) => { if (e.status === 401) location.href = '/admin'; });
+  window.__applause = { setScores: (arr) => { arr.forEach((v, i) => (S.tables[i].applause_score = v)); renderScores(); }, reveal: () => { reveal(); } };
+})();
+</script>
+</body>
+</html>
