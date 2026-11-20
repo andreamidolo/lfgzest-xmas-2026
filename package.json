@@ -4,6 +4,7 @@
   "description": "LFG+Zest Christmas Dinner 2026 — Music Challenge",
   "main": "server.js",
   "scripts": {
+    "build": "node scripts/migrate.js",
     "start": "node server.js",
     "dev": "node server.js"
   },
@@ -11,12 +12,16 @@
   "license": "ISC",
   "dependencies": {
     "@electric-sql/pglite": "^0.5.17",
+    "@neon/config": "^1.14.5",
+    "@neon/env": "^2.1.8",
+    "@neondatabase/serverless": "^1.2.1",
+    "@vercel/functions": "^3.11.3",
     "express": "^4.22.3",
     "pg": "^8.23.1",
     "qrcode": "^1.5.4"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20.12"
   },
   "private": true
 }
