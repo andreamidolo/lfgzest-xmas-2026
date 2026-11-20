@@ -11,7 +11,7 @@ let impl = null;
 
 // All app tables live in a dedicated schema, so the app can share a database safely.
 const SCHEMA = (process.env.DB_SCHEMA || 'xmas2026').replace(/[^a-z0-9_]/gi, '');
-const qualify = (sql) => sql.replace(/(^|[^.\w])(event_tables|participants|submissions)\b/g, `$1${SCHEMA}.$2`);
+const qualify = (sql) => sql.replace(/(^|[^.\w'])(event_tables|participants|submissions)\b/g, `$1${SCHEMA}.$2`);
 
 const isPg = (v) => typeof v === 'string' && /^postgres(ql)?:\/\//.test(v);
 // Pooled URL for app queries. Accepts DATABASE_URL / POSTGRES_URL, or any prefixed *_URL a
@@ -74,6 +74,7 @@ const MIGRATIONS = [
      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
      updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
    )`,
+  `ALTER TABLE submissions ADD COLUMN IF NOT EXISTS production JSONB`,
 ];
 
 // Run migrations over a DIRECT connection (never through PgBouncer).
@@ -98,8 +99,8 @@ async function init() {
     // the app runs single statements only, so no transactions are needed.
     const sql = require('@neondatabase/serverless').neon(url, { fullResults: true });
     impl = { query: async (text, params) => { const r = await sql.query(qualify(text), params || []); return { rows: r.rows }; }, kind: 'neon-http' };
-    const { rows } = await impl.query(`SELECT to_regclass('${SCHEMA}.submissions') AS t`);
-    if (!rows[0].t) await migratePostgres();
+    const { rows } = await impl.query(`SELECT 1 AS t FROM information_schema.columns WHERE table_schema='${SCHEMA}' AND table_name='submissions' AND column_name='production'`);
+    if (!rows[0]) await migratePostgres();
   } else if (url) {
     const { Pool } = require('pg');
     const pool = new Pool({ connectionString: url, ssl: sslFor(url), max: process.env.VERCEL ? 5 : 10, idleTimeoutMillis: 5000 });
@@ -108,8 +109,8 @@ async function init() {
     }
     impl = { query: (text, params) => pool.query(qualify(text), params), kind: 'postgres', pool };
     // Normally `npm run build` has migrated already; this is a safety net for a fresh database.
-    const { rows } = await impl.query(`SELECT to_regclass('${SCHEMA}.submissions') AS t`);
-    if (!rows[0].t) await migratePostgres();
+    const { rows } = await impl.query(`SELECT 1 AS t FROM information_schema.columns WHERE table_schema='${SCHEMA}' AND table_name='submissions' AND column_name='production'`);
+    if (!rows[0]) await migratePostgres();
   } else {
     if (process.env.VERCEL) {
       throw new Error('DATABASE_URL (or POSTGRES_URL) is required in production (serverless has no persistent disk).');

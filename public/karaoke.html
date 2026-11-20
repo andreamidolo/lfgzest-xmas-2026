@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#051E25">
+<meta name="robots" content="noindex, nofollow">
+<title>Karaoke · LFG+Zest Christmas 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Mulish:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css">
+<link rel="icon" href="/brand/favicon.svg">
+<style>
+  html, body { height: 100%; overflow: hidden; }
+  .stage { position: fixed; inset: 0; z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 4vh 6vw; }
+  .cover { position: fixed; inset: -10%; z-index: 0; background-size: cover; background-position: center; filter: blur(60px) saturate(1.2); opacity: .28; transform: scale(1.1); }
+  .top { position: fixed; top: 3vh; left: 0; right: 0; z-index: 2; display: flex; justify-content: center; align-items: center; gap: 18px; }
+  .top img { height: 6vh; min-height: 36px; }
+  .intro .eyebrow { font-size: max(12px, 1.4vw); }
+  .intro h1 { font-size: clamp(40px, 7vw, 120px); color: var(--champagne); line-height: 1.05; margin-top: 1.5vh; }
+  .intro h1 em { color: var(--gold); }
+  .intro .tbl { font-family: var(--font-display); font-style: italic; color: var(--gold); font-size: clamp(22px, 3vw, 48px); margin-top: 2vh; }
+  .intro .theme { color: var(--text-2); font-size: clamp(16px, 1.6vw, 26px); margin-top: 1.5vh; max-width: 60vw; }
+  .lyrics { width: 100%; max-width: 1500px; }
+  .line { font-family: var(--font-display); line-height: 1.25; transition: all .35s ease; }
+  .line.prev { font-size: clamp(18px, 2.4vw, 38px); opacity: .28; color: var(--text-2); min-height: 1.3em; }
+  .line.cur { font-size: clamp(30px, 5.2vw, 88px); color: rgba(243, 230, 200, .35); margin: 3vh 0; min-height: 1.3em; font-weight: 500; }
+  .line.next { font-size: clamp(18px, 2.6vw, 42px); opacity: .55; color: var(--text-2); min-height: 1.3em; }
+  .w { position: relative; display: inline-block; white-space: pre; }
+  .w::after { content: attr(data-t); position: absolute; left: 0; top: 0; color: var(--gold); text-shadow: 0 0 24px rgba(213, 178, 106, .55);
+    width: var(--p, 0%); overflow: hidden; white-space: pre; }
+  .w.done { color: var(--champagne); }
+  .w.done::after { width: 100%; color: var(--champagne); text-shadow: none; }
+  .finale h2 { font-size: clamp(40px, 7vw, 110px); color: var(--champagne); font-style: italic; }
+  .bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 3; display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap;
+    padding: 12px 16px; background: rgba(5, 30, 37, .85); border-top: 1px solid var(--line); transition: opacity .4s; }
+  body.playing .bar { opacity: 0; } body.playing .bar:hover { opacity: 1; }
+  .bar select, .bar .btn { width: auto; }
+  .bar select { padding: 8px 10px; font-size: 13px; }
+  .bar .tiny { margin: 0 6px; }
+  .progress { position: fixed; left: 0; bottom: 0; height: 3px; background: linear-gradient(90deg, var(--h-teal), var(--gold)); z-index: 4; width: 0; }
+  .hint { position: fixed; top: 12px; right: 16px; z-index: 3; font-size: 12px; color: var(--text-3); }
+  body.playing .hint { display: none; }
+</style>
+</head>
+<body>
+<div id="cover" class="cover"></div>
+<div class="top"><img src="/brand/lfg-zest-white.png" alt="LFG+Zest"><img src="/brand/lfa-white.png" alt="LFA"></div>
+<div class="hint">Space = play/pause · F = full screen · ←/→ = sync ±0.2s</div>
+<main class="stage">
+  <div id="intro" class="intro">
+    <p class="eyebrow">Christmas Music Battle</p>
+    <h1 id="title">…</h1>
+    <div class="tbl" id="tbl"></div>
+    <p class="theme" id="theme"></p>
+  </div>
+  <div id="lyrics" class="lyrics hidden">
+    <div class="line prev" id="lPrev"></div>
+    <div class="line cur" id="lCur"></div>
+    <div class="line next" id="lNext"></div>
+  </div>
+  <div id="finale" class="finale hidden"><div class="star" style="font-size:60px;color:var(--gold)">✦</div><h2>Merry Christmas!</h2><p class="eyebrow" id="finTbl" style="margin-top:2vh"></p></div>
+</main>
+<div class="progress" id="prog"></div>
+<div class="bar">
+  <a class="btn btn-sm btn-ghost" href="/admin#songs">← Dashboard</a>
+  <select id="version" aria-label="Version"></select>
+  <button class="btn btn-sm" id="pickFile">Load MP3…</button>
+  <input type="file" id="file" accept="audio/*" class="hidden">
+  <button class="btn btn-sm btn-gold" id="play">▶ Play</button>
+  <button class="btn btn-sm" id="restart">⟲ Restart</button>
+  <span class="tiny" id="srcInfo"></span>
+  <span class="tiny">Sync <b id="offTxt">0.0s</b></span>
+  <button class="btn btn-sm" id="fs">Full screen</button>
+</div>
+<audio id="audio" preload="auto" crossorigin="anonymous"></audio>
+<script src="/common.js"></script>
+<script>
+(async () => {
+  const $ = (id) => document.getElementById(id);
+  const tableId = +location.pathname.split('/').pop();
+  const audio = $('audio');
+  let S, t, sub, clip, lines = [], offset = 0, useClock = false, clockStart = 0, clockPaused = 0, running = false;
+  document.querySelector('.ambient')?.remove();
+
+  try { S = await api('/api/admin/state'); } catch (e) { if (e.status === 401) location.href = '/admin'; return; }
+  t = S.tables.find((x) => x.id === tableId); sub = S.submissions.find((x) => x.tableId === tableId);
+  if (!t || !sub) { $('title').textContent = 'No song for this table yet'; return; }
+  $('title').textContent = sub.title; $('tbl').textContent = 'Table ' + t.number + (t.name ? ' · ' + t.name : '');
+  $('theme').textContent = sub.theme || ''; $('finTbl').textContent = 'Table ' + t.number + ' · ' + sub.title;
+  const prod = sub.production || { clips: [] };
+  prod.clips.forEach((c, i) => $('version').insertAdjacentHTML('beforeend', `<option value="${esc(c.id)}">Version ${i + 1}${c.duration ? ' · ' + Math.round(c.duration) + 's' : ''}${c.alignment ? '' : ' (no timing)'}</option>`));
+  if (!prod.clips.length) $('version').innerHTML = '<option>No Suno version yet</option>';
+  $('version').value = prod.selected || (prod.clips[0] && prod.clips[0].id) || '';
+
+  function buildLines(words) {
+    const out = []; let cur = [];
+    for (const w of words || []) {
+      const parts = w.w.split('\n');
+      parts.forEach((p, i) => {
+        if (i > 0 && cur.length) { out.push(cur); cur = []; }
+        if (p) cur.push({ t: p.replace(/^\s+/, cur.length ? ' ' : ''), s: w.s, e: Math.max(w.e, w.s + 0.05) });
+      });
+    }
+    if (cur.length) out.push(cur);
+    return out.filter((l) => l.length);
+  }
+  // Fallback when no timing: lyrics text split evenly over the song.
+  function evenLines(text, dur) {
+    const ls = text.split('\n').map((l) => l.trim()).filter((l) => l && !/^\[.*\]$/.test(l));
+    const per = (dur || 150) / Math.max(ls.length, 1);
+    return ls.map((l, i) => l.split(/(\s+)/).filter(Boolean).reduce((acc, tok) => { if (/^\s+$/.test(tok) && acc.length) acc[acc.length - 1].t += tok; else acc.push({ t: tok }); return acc; }, [])
+      .map((w, j, arr) => ({ t: w.t, s: i * per + (j / arr.length) * per * 0.9, e: i * per + ((j + 1) / arr.length) * per * 0.9 })));
+  }
+  function selectClip(id) {
+    clip = prod.clips.find((c) => c.id === id) || null;
+    lines = clip && clip.alignment && clip.alignment.length ? buildLines(clip.alignment) : evenLines(sub.lyrics, clip && clip.duration);
+    if (clip && clip.image) $('cover').style.backgroundImage = `url("${clip.image.replace('image_', 'image_large_')}")`;
+    loadAudio(clip ? (clip.audioUrl || `https://cdn1.suno.ai/${clip.id}.mp4`) : null, clip ? 'Suno' : '');
+    reset();
+  }
+  function loadAudio(src, label) {
+    useClock = false;
+    if (!src) { useClock = true; $('srcInfo').textContent = 'No audio — lyrics only (load an MP3)'; return; }
+    audio.src = src; $('srcInfo').textContent = 'Loading audio…';
+    audio.oncanplay = () => { $('srcInfo').textContent = 'Audio: ' + label; };
+    audio.onerror = () => { useClock = true; $('srcInfo').textContent = 'Song audio not reachable (is it published on Suno?) — click “Load MP3…”'; };
+  }
+  $('pickFile').onclick = () => $('file').click();
+  $('file').onchange = () => { const f = $('file').files[0]; if (f) { loadAudio(URL.createObjectURL(f), f.name); reset(); } };
+  $('version').onchange = () => selectClip($('version').value);
+
+  const now = () => (useClock ? (running ? (performance.now() - clockStart) / 1000 : clockPaused) : audio.currentTime) + offset;
+  function render(tm) {
+    const firstS = lines[0] ? lines[0][0].s : 0;
+    const lastE = lines.length ? lines[lines.length - 1].slice(-1)[0].e : 0;
+    const dur = (!useClock && audio.duration) || (clip && clip.duration) || lastE + 4;
+    $('prog').style.width = Math.min(100, (tm / dur) * 100) + '%';
+    const started = running || tm > 0.05;
+    const intro = !started || tm < firstS - 1.2;
+    const finale = started && tm > lastE + 2.5;
+    $('intro').classList.toggle('hidden', !intro); $('finale').classList.toggle('hidden', !finale);
+    $('lyrics').classList.toggle('hidden', intro || finale);
+    if (intro || finale) return;
+    let idx = lines.findIndex((l) => tm < l[l.length - 1].e + 0.35);
+    if (idx < 0) idx = lines.length - 1;
+    if (idx > 0 && tm < lines[idx][0].s - 2.5) idx = idx; // keep showing upcoming line
+    const draw = (el, l, active) => {
+      if (!l) { el.innerHTML = '&nbsp;'; return; }
+      if (!active) { el.textContent = l.map((w) => w.t).join(''); return; }
+      el.innerHTML = l.map((w) => {
+        const p = tm <= w.s ? 0 : tm >= w.e ? 100 : ((tm - w.s) / (w.e - w.s)) * 100;
+        return `<span class="w ${p >= 100 ? 'done' : ''}" data-t="${esc(w.t)}" style="--p:${p}%">${esc(w.t)}</span>`;
+      }).join('');
+    };
+    draw($('lPrev'), lines[idx - 1], false); draw($('lCur'), lines[idx], true); draw($('lNext'), lines[idx + 1], false);
+  }
+  function loop() { render(now()); requestAnimationFrame(loop); }
+  function play() {
+    if (running) return pause();
+    running = true; document.body.classList.add('playing'); $('play').textContent = '❚❚ Pause';
+    if (useClock) clockStart = performance.now() - clockPaused * 1000; else audio.play().catch(() => { useClock = true; clockStart = performance.now() - clockPaused * 1000; });
+  }
+  function pause() {
+    running = false; document.body.classList.remove('playing'); $('play').textContent = '▶ Play';
+    if (useClock) clockPaused = (performance.now() - clockStart) / 1000; else audio.pause();
+  }
+  function reset() { pause(); clockPaused = 0; try { audio.currentTime = 0; } catch (_) {} }
+  audio.onended = () => { running = false; document.body.classList.remove('playing'); $('play').textContent = '▶ Play'; };
+  $('play').onclick = play; $('restart').onclick = reset;
+  $('fs').onclick = () => (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen());
+  const setOff = (d) => { offset = Math.round((offset + d) * 10) / 10; $('offTxt').textContent = (offset >= 0 ? '+' : '') + offset.toFixed(1) + 's'; };
+  document.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'SELECT' || e.target.tagName === 'INPUT') return;
+    if (e.code === 'Space') { e.preventDefault(); play(); }
+    if (e.key === 'f' || e.key === 'F') $('fs').click();
+    if (e.key === 'ArrowRight') setOff(0.2); if (e.key === 'ArrowLeft') setOff(-0.2);
+  });
+  window.__karaoke = { seek: (s) => { useClock = true; running = false; clockPaused = s; } };
+  selectClip($('version').value);
+  loop();
+})();
+</script>
+</body>
+</html>

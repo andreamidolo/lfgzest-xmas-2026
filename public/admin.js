@@ -83,6 +83,20 @@
     return `TABLE ${t.number}${t.name ? ' — ' + t.name : ''}\nTITLE: ${s.title}\n${s.theme ? 'THEME: ' + s.theme + '\n' : ''}\nSTYLE OF MUSIC:\n${s.style}\n\nLYRICS:\n${s.lyrics}\n`;
   }
 
+  function prodHtml(t, s) {
+    const p = s.production;
+    const karaoke = `<a class="btn btn-sm btn-gold" href="/admin/karaoke/${t.id}" target="_blank" rel="noopener">▶ Karaoke</a>`;
+    if (!p || !p.clips || !p.clips.length) return `<div class="prod empty"><span class="eyebrow">Suno</span><span class="tiny">Not produced yet${t.locked ? ' — queued for production' : ' — lock the table to send it to Suno'}</span></div>`;
+    const vers = p.clips.map((c, i) => `<label class="ver ${p.selected === c.id ? 'sel' : ''}">
+        <input type="radio" name="sel-${t.id}" value="${esc(c.id)}" ${p.selected === c.id ? 'checked' : ''} data-sel>
+        ${c.image ? `<img src="${esc(c.image)}" alt="">` : ''}<span>Version ${i + 1}${c.duration ? `<br><small>${Math.floor(c.duration / 60)}:${String(Math.round(c.duration % 60)).padStart(2, '0')}</small>` : ''}${c.alignment ? '' : '<br><small>no timing</small>'}</span>
+        <a href="${esc(c.songUrl)}" target="_blank" rel="noopener" title="Open on Suno">↗</a></label>`).join('');
+    const sel = p.clips.find((c) => c.id === p.selected) || p.clips[0];
+    const src = sel.audioUrl || `https://cdn1.suno.ai/${sel.id}.mp4`;
+    return `<div class="prod"><div class="blk-h"><span class="eyebrow">Suno · pick the version to play</span>${karaoke}</div>
+      <div class="vers">${vers}</div><audio controls preload="none" src="${esc(src)}"></audio></div>`;
+  }
+
   function renderSongs() {
     const box = $('songs');
     const fresh = [];
@@ -104,6 +118,7 @@
         ${s.theme ? `<p class="theme">${esc(s.theme)}</p>` : ''}
         <div><div class="blk-h"><span class="eyebrow">Style of music · ${clen(s.style)}</span><button class="btn btn-sm" data-copy="style">Copy Style</button></div><pre>${esc(s.style)}</pre></div>
         <div><div class="blk-h"><span class="eyebrow">Lyrics · ${clen(s.lyrics)}</span><button class="btn btn-sm" data-copy="lyrics">Copy Lyrics</button></div><pre>${esc(s.lyrics)}</pre></div>
+        ${prodHtml(t, s)}
         <div class="meta">Submitted ${fmtTime(s.createdAt)}${s.revision > 1 ? ` · edited ${s.revision - 1}× · last ${fmtTime(s.updatedAt)}` : ''}</div>
         <div class="actions">
           <button class="btn btn-sm btn-gold" data-copy="all">Copy All</button>
@@ -123,6 +138,11 @@
     if (e.target.closest('[data-del]') && confirm(`Delete Table ${t.number}'s song? The table will be able to submit again.`)) act(`/api/admin/submissions/${t.id}`, 'DELETE', undefined, 'Submission deleted');
   });
   $('songs').addEventListener('change', (e) => {
+    if (e.target.matches('[data-sel]')) {
+      const id = +e.target.closest('.song').dataset.t;
+      act(`/api/admin/submissions/${id}/production`, 'PUT', { selected: e.target.value }, 'Version selected');
+      return;
+    }
     if (!e.target.matches('[data-status]')) return;
     const id = +e.target.closest('.song').dataset.t;
     act(`/api/admin/submissions/${id}`, 'PATCH', { status: e.target.value }, 'Status: ' + e.target.value);

@@ -87,3 +87,16 @@
   .tcard h4, .toolbar h2 { color: #000; } .tcard li .sn { color: #555; } .table-cards { grid-template-columns: repeat(3, 1fr); }
   .guest-table-wrap { display: none; } .card:has(.guest-table) { display: none; }
 }
+
+.prod { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; background: rgba(213, 178, 106, .05); display: flex; flex-direction: column; gap: 10px; }
+.prod.empty { flex-direction: row; gap: 10px; align-items: center; }
+.prod audio { width: 100%; height: 36px; }
+.vers { display: flex; gap: 8px; flex-wrap: wrap; }
+.ver { flex: 1; min-width: 140px; display: flex; align-items: center; gap: 8px; padding: 6px 8px; border: 1px solid var(--line-soft); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 700; }
+.ver.sel { border-color: var(--gold); background: rgba(213, 178, 106, .1); }
+.ver img { width: 38px; height: 38px; border-radius: 6px; object-fit: cover; }
+.ver small { font-weight: 400; color: var(--text-3); }
+.ver a { margin-left: auto; text-decoration: none; color: var(--text-3); }
+.ver input { accent-color: var(--gold); }
+.prod .blk-h .btn { white-space: nowrap; flex: none; }
+.prod .blk-h { gap: 10px; }

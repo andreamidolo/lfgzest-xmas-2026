@@ -175,7 +175,8 @@ app.get('/api/admin/state', wrap(async (req, res) => {
   const base = baseUrl(req);
   const tables = t.rows.map((r) => ({ ...r, url: `${base}/t/${r.token}` }));
   const subs = s.rows.map((r) => ({ tableId: r.table_id, title: r.title, theme: r.theme, lyrics: r.lyrics, style: r.style,
-    status: r.status, revision: r.revision, createdAt: r.created_at, updatedAt: r.updated_at }));
+    status: r.status, revision: r.revision, createdAt: r.created_at, updatedAt: r.updated_at,
+    production: typeof r.production === 'string' ? JSON.parse(r.production) : r.production || null }));
   res.json({ baseUrl: base, tables, participants: p.rows, submissions: subs, statuses: STATUSES, limits: LIMITS });
 }));
 
@@ -277,6 +278,36 @@ app.patch('/api/admin/submissions/:tableId', wrap(async (req, res) => {
   await q('UPDATE submissions SET status=$2 WHERE table_id=$1', [parseInt(req.params.tableId, 10), status]);
   res.json({ ok: true });
 }));
+// Suno production results (written by the organizer's agent during the dinner).
+// Body: { clips: [{ id, title, duration, image, songUrl, alignment: [{word,start_s,end_s}] }], selected?, status? }
+function cleanClip(c) {
+  const id = String(c.id || '').replace(/[^a-z0-9-]/gi, '').slice(0, 64);
+  if (!id) return null;
+  const words = Array.isArray(c.alignment) ? c.alignment.slice(0, 3000).map((w) => ({
+    w: String(w.word ?? w.w ?? '').slice(0, 80), s: Number(w.start_s ?? w.s) || 0, e: Number(w.end_s ?? w.e) || 0 })) : null;
+  return { id, title: String(c.title || '').slice(0, 200), duration: Number(c.duration) || null,
+    image: /^https:\/\/[\w.-]+\.suno\.ai\//.test(c.image || '') ? c.image : null,
+    songUrl: `https://suno.com/song/${id}`, audioUrl: typeof c.audioUrl === 'string' && /^https:\/\//.test(c.audioUrl) ? c.audioUrl.slice(0, 500) : null,
+    alignment: words };
+}
+app.put('/api/admin/submissions/:tableId/production', wrap(async (req, res) => {
+  const b = req.body || {};
+  const tableId = parseInt(req.params.tableId, 10);
+  const { rows } = await q('SELECT production FROM submissions WHERE table_id=$1', [tableId]);
+  if (!rows[0]) return bad(res, 'No submission for this table.', 404);
+  const cur = (typeof rows[0].production === 'string' ? JSON.parse(rows[0].production) : rows[0].production) || { clips: [] };
+  if (Array.isArray(b.clips)) {
+    const byId = new Map(cur.clips.map((c) => [c.id, c]));
+    for (const c of b.clips.slice(0, 6)) { const cc = cleanClip(c); if (cc) byId.set(cc.id, { ...byId.get(cc.id), ...Object.fromEntries(Object.entries(cc).filter(([, v]) => v != null)) }); }
+    cur.clips = [...byId.values()].slice(-6);
+  }
+  if (b.selected !== undefined) cur.selected = cur.clips.some((c) => c.id === b.selected) ? b.selected : cur.selected;
+  if (!cur.selected && cur.clips[0]) cur.selected = cur.clips[0].id;
+  cur.updatedAt = new Date().toISOString();
+  await q('UPDATE submissions SET production=$2 WHERE table_id=$1', [tableId, JSON.stringify(cur)]);
+  if (b.status && STATUSES.includes(b.status)) await q('UPDATE submissions SET status=$2 WHERE table_id=$1', [tableId, b.status]);
+  res.json({ ok: true, production: cur });
+}));
 app.delete('/api/admin/submissions/:tableId', wrap(async (req, res) => {
   await q('DELETE FROM submissions WHERE table_id=$1', [parseInt(req.params.tableId, 10)]);
   res.json({ ok: true });
@@ -322,6 +353,7 @@ app.get('/', page('index.html'));
 app.get('/t/:token', page('table.html'));
 app.get('/admin', page('admin.html'));
 app.get('/admin/print-qr', page('print-qr.html'));
+app.get('/admin/karaoke/:tableId', page('karaoke.html'));
 app.get('/health', async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   const hasDb = !!findDbUrl();
