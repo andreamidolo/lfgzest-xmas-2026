@@ -152,3 +152,9 @@ footer.foot .logos img.holding-logo { height: 20px !important; }
   background: #F3E6C8; color: #1B1407; padding: 11px 18px; border-radius: 999px; font-weight: 700; font-size: 14px; box-shadow: 0 10px 30px rgba(0, 0, 0, .4); max-width: calc(100% - 32px); }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 .toast.err { background: #F7C9CC; color: #4A0A10; }
+
+/* vibe chips */
+.vibes { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.vibe { appearance: none; border: 1px solid var(--line-soft); background: rgba(5, 30, 37, .55); color: var(--text); font: inherit; font-size: 14px; font-weight: 700;
+  padding: 10px 14px; border-radius: 999px; cursor: pointer; min-height: 44px; transition: all .15s; }
+.vibe[aria-checked="true"] { border-color: var(--gold); background: rgba(213, 178, 106, .16); color: var(--champagne); box-shadow: 0 0 0 2px rgba(213, 178, 106, .18); }

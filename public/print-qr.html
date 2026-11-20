@@ -45,10 +45,10 @@
     const S = await api('/api/admin/state');
     if (/localhost|127\.0\.0\.1|192\.168\./.test(S.baseUrl)) { document.getElementById('warn').classList.remove('hidden'); document.getElementById('warnMsg').innerHTML = 'These QR codes point to <b>' + esc(S.baseUrl) + '</b>, a development address. Print them from the published app.'; }
     document.getElementById('sheet').innerHTML = S.tables.map((t) => '<div class="pc"><div class="logos"><img src="/brand/lfg-zest-white.png" alt="LFG+Zest"><img src="/brand/lfa-white.png" alt="LFA"></div>' +
-      '<p class="eyebrow">Christmas Dinner 2026</p><h2>Music Battle</h2>' +
-      '<div class="q"><img src="/api/admin/qr/' + t.id + '.png?v=' + t.token.slice(0, 6) + '" alt="QR Table ' + t.number + '"></div>' +
-      '<div class="tn">Table ' + t.number + '</div>' + (t.name ? '<div class="nm">' + esc(t.name) + '</div>' : '') +
-      '<div class="cta">Scan to submit your table’s song</div></div>').join('');
+      '<p class="eyebrow">Christmas Dinner 2026</p><h2>Let’s Make a Song!</h2>' +
+      '<div class="q"><img src="/api/admin/qr/' + t.id + '.png?v=' + t.token.slice(0, 6) + '" alt="QR Team ' + t.number + '"></div>' +
+      '<div class="tn">Team ' + t.number + '</div>' + (t.name ? '<div class="nm">' + esc(t.name) + '</div>' : '') +
+      '<div class="cta">Scan &amp; add your idea</div></div>').join('');
   } catch (e) { if (e.status === 401) location.href = '/admin'; else document.getElementById('sheet').innerHTML = '<p class="msg err">' + esc(e.message) + '</p>'; }
 })();
 </script>

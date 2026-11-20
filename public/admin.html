@@ -34,39 +34,40 @@
       <div><p class="eyebrow" style="letter-spacing:.24em">Organizer</p><div class="tb-title">Christmas Dinner 2026</div></div>
     </div>
     <nav class="tabs" role="tablist">
-      <button data-tab="songs" class="active">Songs</button>
+      <button data-tab="songs" class="active">Teams &amp; Songs</button>
       <button data-tab="seating">Seating</button>
-      <button data-tab="qr">Tables &amp; QR</button>
+      <button data-tab="qr">Teams &amp; QR</button>
     </nav>
     <div class="tb-right"><span id="live" class="live"><i></i>Live</span><button id="logout" class="btn btn-sm btn-ghost">Sign out</button></div>
   </header>
 
   <main class="admin">
     <section class="stats">
-      <div class="stat"><b id="sTables">–</b><span>Tables</span></div>
-      <div class="stat"><b id="sSongs">–</b><span>Songs received</span></div>
+      <div class="stat"><b id="sTables">–</b><span>Teams</span></div>
+      <div class="stat"><b id="sSongs">–</b><span>Ideas received</span></div>
       <div class="stat"><b id="sGuests">–</b><span>Guests seated</span></div>
-      <div class="stat wide"><span>Submitted</span><div id="sDone" class="chips"></div><span style="margin-top:8px">Still waiting</span><div id="sWait" class="chips"></div></div>
+      <div class="stat wide"><span>Songs ready</span><div id="sDone" class="chips"></div><span style="margin-top:8px">In progress</span><div id="sWait" class="chips"></div></div>
     </section>
 
     <!-- SONGS -->
     <section id="tab-songs" class="tab">
       <div class="toolbar">
-        <h2>Song submissions</h2>
+        <h2>Teams &amp; songs</h2>
         <div class="tb-actions">
-          <select id="songFilter" aria-label="Filter by status"><option value="">All statuses</option></select>
-          <button class="btn btn-sm" id="lockAll">Lock all</button>
+          <button class="btn btn-sm" id="lockAll">Close all ideas</button>
           <button class="btn btn-sm" id="unlockAll">Reopen all</button>
+          <a class="btn btn-sm" href="/karaoke" target="_blank" rel="noopener">Shared Karaoke ↗</a>
           <a class="btn btn-sm" href="/api/admin/export/songs.csv">Export CSV</a>
         </div>
       </div>
+      <p class="tiny" style="margin:-6px 0 14px">Flow: guests add ideas → <b>Close ideas</b> → <b>Generate song</b> (Claude composes) → edit or regenerate → <b>Approve</b> → Suno → pick a version → <b>Ready</b> (appears in the shared Karaoke).</p>
       <div id="songs" class="songs"></div>
     </section>
 
     <!-- SEATING -->
     <section id="tab-seating" class="tab hidden">
       <div class="toolbar">
-        <h2>Seating plan <span class="tiny" style="font-family:var(--font-body)">— recorded manually from the paper-card draw</span></h2>
+        <h2>Seating &amp; teams <span class="tiny" style="font-family:var(--font-body)">— recorded manually from the paper-card draw</span></h2>
         <div class="tb-actions">
           <a class="btn btn-sm" href="/api/admin/export/seating.csv">Export CSV</a>
           <button class="btn btn-sm" onclick="window.print()">Print plan</button>
@@ -97,9 +98,9 @@
     <!-- TABLES & QR -->
     <section id="tab-qr" class="tab hidden">
       <div class="toolbar">
-        <h2>Tables &amp; QR codes</h2>
+        <h2>Teams &amp; QR codes</h2>
         <div class="tb-actions">
-          <button class="btn btn-sm" id="addTable">+ Add table</button>
+          <button class="btn btn-sm" id="addTable">+ Add team</button>
           <a class="btn btn-sm btn-gold" href="/admin/print-qr" target="_blank" rel="noopener">Print / save all QR codes</a>
         </div>
       </div>

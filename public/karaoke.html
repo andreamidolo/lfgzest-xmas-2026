@@ -50,7 +50,7 @@
 <div class="hint">Space = play/pause · F = full screen · ←/→ = sync ±0.2s</div>
 <main class="stage">
   <div id="intro" class="intro">
-    <p class="eyebrow">Christmas Music Battle</p>
+    <p class="eyebrow">LFG+Zest Christmas Dinner</p>
     <h1 id="title">…</h1>
     <div class="tbl" id="tbl"></div>
     <p class="theme" id="theme"></p>
@@ -84,11 +84,22 @@
   let S, t, sub, clip, lines = [], offset = 0, useClock = false, clockStart = 0, clockPaused = 0, running = false;
   document.querySelector('.ambient')?.remove();
 
-  try { S = await api('/api/admin/state'); } catch (e) { if (e.status === 401) location.href = '/admin'; return; }
-  t = S.tables.find((x) => x.id === tableId); sub = S.submissions.find((x) => x.tableId === tableId);
-  if (!t || !sub) { $('title').textContent = 'No song for this table yet'; return; }
-  $('title').textContent = sub.title; $('tbl').textContent = 'Table ' + t.number + (t.name ? ' · ' + t.name : '');
-  $('theme').textContent = sub.theme || ''; $('finTbl').textContent = 'Table ' + t.number + ' · ' + sub.title;
+  // Two modes: organizer preview (/admin/karaoke/<teamId>, any status) and public (/karaoke/<teamNumber>, Ready songs only).
+  const isPublic = location.pathname.startsWith('/karaoke/');
+  if (isPublic) {
+    const r = await api('/api/karaoke').catch(() => ({ songs: [] }));
+    const song = r.songs.find((x) => x.team === tableId);
+    if (!song) { $('title').textContent = 'This song is not ready yet'; $('tbl').textContent = 'Check the Karaoke page again in a moment'; return; }
+    t = { number: song.team, name: song.teamName };
+    sub = { title: song.title, concept: song.concept, lyrics: song.lyrics, production: { clips: [song.clip], selected: song.clip.id } };
+    document.querySelector('.bar a').href = '/karaoke'; document.querySelector('.bar a').textContent = '← All songs';
+  } else {
+    try { S = await api('/api/admin/state'); } catch (e) { if (e.status === 401) location.href = '/admin'; return; }
+    t = S.tables.find((x) => x.id === tableId); sub = S.submissions.find((x) => x.tableId === tableId);
+  }
+  if (!t || !sub) { $('title').textContent = 'No song for this team yet'; return; }
+  $('title').textContent = sub.title; $('tbl').textContent = 'Team ' + t.number + (t.name ? ' · ' + t.name : '');
+  $('theme').textContent = sub.concept || ''; $('finTbl').textContent = 'Team ' + t.number + ' · ' + sub.title;
   const prod = sub.production || { clips: [] };
   prod.clips.forEach((c, i) => $('version').insertAdjacentHTML('beforeend', `<option value="${esc(c.id)}">Version ${i + 1}${c.duration ? ' · ' + Math.round(c.duration) + 's' : ''}${c.alignment ? '' : ' (no timing)'}</option>`));
   if (!prod.clips.length) $('version').innerHTML = '<option>No Suno version yet</option>';

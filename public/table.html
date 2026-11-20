@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Mulish:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/styles.css">
 <link rel="icon" href="/brand/favicon.svg">
-<title>Christmas Music Battle · LFG+Zest</title>
+<title>Let’s Make a Song · LFG+Zest</title>
 <meta name="robots" content="noindex, nofollow">
 </head>
 <body>
@@ -22,8 +22,8 @@
 
   <section class="hero">
     <div data-garland></div>
-    <p class="eyebrow" style="margin-top:12px">LFG+Zest Christmas Dinner 2026</p>
-    <h1>Christmas<br><em>Music Battle</em></h1>
+    <p class="eyebrow" style="margin-top:12px">LFG+Zest Christmas Dinner</p>
+    <h1>Let&rsquo;s Make<br><em>a Song!</em></h1>
     <div id="badge" class="table-badge hidden"><span class="dot"></span><span id="badgeText"></span></div>
   </section>
 
@@ -32,55 +32,49 @@
 
   <!-- FORM -->
   <section id="formView" class="hidden fade-in">
-    <div class="card">
-      <p class="intro"><strong>Your table. Your song. Your rules.</strong>
-        Create the most outrageous Christmas anthem of the night. Mix unexpected musical genres, write your lyrics and submit your masterpiece. We'll bring it to life with AI!</p>
-    </div>
     <form id="form" class="card" novalidate>
+      <p class="intro"><strong id="teamLine">Add your little piece of madness.</strong>
+        A memory, a situation, a funny line &mdash; anything goes. The AI will turn your team&rsquo;s ideas into one song.</p>
       <div class="field">
-        <label for="title">Song Title</label>
-        <input type="text" id="title" name="title" maxlength="120" autocomplete="off" placeholder="e.g. Jingle Bells in the Swiss Alps" required>
+        <label for="name">Your name</label>
+        <input type="text" id="name" maxlength="40" autocomplete="given-name" placeholder="e.g. Laura" required>
       </div>
       <div class="field">
-        <label for="theme">Song Theme / Concept <span class="opt">optional</span></label>
-        <input type="text" id="theme" name="theme" maxlength="400" autocomplete="off" placeholder="e.g. Santa gets stuck in a Lugano bank vault">
+        <label for="idea">Give us an idea!</label>
+        <textarea id="idea" rows="3" data-max="160" placeholder="e.g. Someone always says &ldquo;one last drink&rdquo; and nobody goes home." required style="min-height:96px"></textarea>
+        <div class="counter" data-for="idea"></div>
       </div>
       <div class="field">
-        <label for="lyrics">Lyrics</label>
-        <p class="hint">Write the complete lyrics yourselves — English encouraged. Verses, chorus, bridge… go wild.</p>
-        <textarea id="lyrics" name="lyrics" rows="9" data-max="1000" placeholder="[Verse 1]&#10;Snow is falling on the lake tonight…&#10;&#10;[Chorus]&#10;…" required></textarea>
-        <div class="counter" data-for="lyrics"></div>
-      </div>
-      <div class="field">
-        <label for="style">Style of Music</label>
-        <p class="hint">The more extreme the mix of genres, the better.</p>
-        <textarea id="style" name="style" rows="6" data-max="1000" placeholder="Grand opera meets 90s Eurodance, aggressive death metal guitars, Balkan brass orchestra, dramatic gospel choir and explosive techno drops." required></textarea>
-        <div class="counter" data-for="style"></div>
+        <label>What kind of music do you like? <span class="opt">optional</span></label>
+        <div class="vibes" id="vibes" role="radiogroup"></div>
       </div>
       <div id="formMsg" class="msg err hidden" role="alert"></div>
-      <button type="submit" id="submitBtn" class="btn btn-gold btn-big">Submit Our Song</button>
-      <button type="button" id="cancelEdit" class="btn btn-ghost hidden" style="width:100%;margin-top:10px">Cancel editing</button>
-      <p class="tiny" style="text-align:center;margin-top:12px">Only one song per table. You can edit it until the organizer locks it.</p>
+      <button type="submit" id="submitBtn" class="btn btn-gold btn-big">Submit My Idea</button>
+      <button type="button" id="cancelEdit" class="btn btn-ghost hidden" style="width:100%;margin-top:10px">Cancel</button>
     </form>
   </section>
 
-  <!-- CONFIRMATION -->
+  <!-- THANK YOU -->
   <section id="doneView" class="hidden fade-in">
     <div class="card confirm">
-      <div class="star">✦</div>
-      <h2 id="doneTitle">Your song is in!</h2>
-      <p class="muted" id="doneSub" style="margin:8px 0 0">Bravo! Your masterpiece has reached the organizer. Sit back, enjoy dinner — and get ready to hear it.</p>
-      <div style="margin-top:14px"><span id="doneStatus" class="status-pill"></span></div>
-      <div id="lockedMsg" class="msg info hidden">The organizer has locked your song — it's heading to the studio. No more changes possible.</div>
-      <button id="editBtn" class="btn btn-gold" style="margin-top:18px;width:100%">Edit our song</button>
+      <div class="star">&#10022;</div>
+      <h2 id="doneTitle">Thank you!</h2>
+      <p class="muted" id="doneSub" style="margin:8px 0 0">Your idea is in. Now enjoy the aperitivo &mdash; the AI will do the rest.</p>
+      <div class="proposal" style="margin-top:16px"><pre id="myIdea"></pre><p class="tiny" id="myVibe" style="margin-top:6px"></p></div>
+      <button id="editBtn" class="btn" style="margin-top:16px;width:100%">Edit my idea</button>
+      <div id="closedMsg" class="msg info hidden">Ideas are closed &mdash; your team&rsquo;s song is being composed.</div>
     </div>
-    <div class="card proposal">
-      <p class="eyebrow">Your proposal</p>
-      <h3 id="pTitle" style="margin-top:6px"></h3>
-      <p class="theme" id="pTheme"></p>
-      <div class="blk"><span class="eyebrow">Lyrics</span><pre id="pLyrics"></pre></div>
-      <div class="blk"><span class="eyebrow">Style of music</span><pre id="pStyle"></pre></div>
-      <p class="tiny" id="pTime" style="margin-top:14px"></p>
+  </section>
+
+  <!-- SONG REVEAL -->
+  <section id="songView" class="hidden fade-in">
+    <div class="card proposal" style="text-align:center">
+      <p class="eyebrow">Your team&rsquo;s song</p>
+      <h3 id="sTitle" style="margin-top:8px;font-size:30px"></h3>
+      <p class="theme" id="sConcept"></p>
+      <div class="blk" style="text-align:left"><span class="eyebrow">What we did with your ideas</span><pre id="sExpl"></pre></div>
+      <a id="sListen" class="btn btn-gold hidden" href="/karaoke" style="margin-top:18px;width:100%">&#9654; Listen in the Karaoke</a>
+      <p class="tiny" id="sSoon" style="margin-top:14px">The song is in the studio &mdash; it will appear in the Karaoke soon.</p>
     </div>
   </section>
 </main>

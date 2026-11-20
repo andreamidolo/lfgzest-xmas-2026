@@ -5,8 +5,10 @@ const crypto = require('crypto');
 const QRCode = require('qrcode');
 const { init, findDbUrl, dbEnvKeys } = require('./db');
 
-const LIMITS = { title: 120, theme: 400, lyrics: 1000, style: 1000, name: 80 };
-const STATUSES = ['Submitted', 'In Production', 'Ready', 'Played'];
+const LIMITS = { title: 120, concept: 400, lyrics: 3000, style: 1000, explanation: 1500, name: 60, guestName: 40, idea: 160 };
+const VIBES = ['Funky & danceable', 'Retro & classy', 'Pop & catchy', 'Soulful & bluesy', 'Surprise me!'];
+const STATUSES = ['Draft', 'Approved', 'In Production', 'Ready', 'Played'];
+const LIVE = ['Ready', 'Played'];
 const DEFAULT_TABLES = Number(process.env.DEFAULT_TABLES || 6);
 const DEFAULT_CAPACITY = Number(process.env.DEFAULT_CAPACITY || 6);
 
@@ -96,49 +98,77 @@ function rateLimited(ip) {
   return a.length >= 10;
 }
 
-// ---------- guest API (scoped strictly to one table token) ----------
+// ---------- guest API (scoped strictly to one team token) ----------
 async function tableByToken(token) {
   if (typeof token !== 'string' || token.length < 16 || token.length > 64) return null;
   const { rows } = await q('SELECT id, number, name, locked FROM event_tables WHERE token = $1', [token]);
   return rows[0] || null;
 }
-function publicSubmission(s) {
-  if (!s) return null;
-  return { title: s.title, theme: s.theme, lyrics: s.lyrics, style: s.style, status: s.status,
-    createdAt: s.created_at, updatedAt: s.updated_at, revision: s.revision };
+const parseProd = (p) => (typeof p === 'string' ? JSON.parse(p) : p || null);
+function pubIdea(c) { return c && { id: c.id, name: c.name, idea: c.idea, vibe: c.vibe, updatedAt: c.updated_at }; }
+async function myIdea(req, tableId) {
+  const h = String(req.get('x-idea') || ''); const [id, tok] = h.split('.');
+  if (!id || !tok) return null;
+  const { rows } = await q('SELECT * FROM contributions WHERE id=$1 AND table_id=$2', [parseInt(id, 10) || 0, tableId]);
+  const c = rows[0];
+  if (!c || c.edit_token.length !== tok.length || !crypto.timingSafeEqual(Buffer.from(c.edit_token), Buffer.from(tok))) return null;
+  return c;
+}
+function readIdea(b) {
+  const d = { name: str(b.name), idea: str(b.idea), vibe: VIBES.includes(b.vibe) ? b.vibe : '' };
+  if (!d.name) return { err: 'Please tell us your name.' };
+  if (!d.idea) return { err: 'Please give us an idea — a memory, a situation or a funny line.' };
+  if (charLen(d.name) > LIMITS.guestName) return { err: `Name is too long (max ${LIMITS.guestName} characters).` };
+  if (charLen(d.idea) > LIMITS.idea) return { err: `Your idea is too long (max ${LIMITS.idea} characters).` };
+  return { d };
 }
 
 app.get('/api/t/:token', wrap(async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   const t = await tableByToken(req.params.token);
-  if (!t) return bad(res, 'This table link is not valid. Please ask the organizer for your table\'s QR code.', 404);
-  const { rows } = await q('SELECT * FROM submissions WHERE table_id = $1', [t.id]);
-  res.json({ table: { number: t.number, name: t.name, locked: t.locked }, submission: publicSubmission(rows[0]), limits: LIMITS });
+  if (!t) return bad(res, 'This team link is not valid. Please scan your team\'s QR code again.', 404);
+  const mine = await myIdea(req, t.id);
+  const { rows } = await q('SELECT title, concept, explanation, status FROM submissions WHERE table_id=$1', [t.id]);
+  const s = rows[0];
+  // The song is revealed to the team only once the organizer has approved it.
+  const song = s && s.status !== 'Draft' ? { title: s.title, concept: s.concept, explanation: s.explanation, live: LIVE.includes(s.status) } : null;
+  res.json({ team: { number: t.number, name: t.name, open: !t.locked }, mine: pubIdea(mine), song, vibes: VIBES, limits: { name: LIMITS.guestName, idea: LIMITS.idea } });
 }));
 
-app.put('/api/t/:token', wrap(async (req, res) => {
+app.post('/api/t/:token/ideas', wrap(async (req, res) => {
   const t = await tableByToken(req.params.token);
-  if (!t) return bad(res, 'This table link is not valid.', 404);
-  if (t.locked) return bad(res, 'Your table\'s song has been locked by the organizer — it\'s already in the studio!', 423);
-  const b = req.body || {};
-  const data = { title: str(b.title), theme: str(b.theme), lyrics: str(b.lyrics), style: str(b.style) };
-  if (!data.title) return bad(res, 'Please give your song a title.');
-  if (!data.lyrics) return bad(res, 'Please write your lyrics.');
-  if (!data.style) return bad(res, 'Please describe the style of music.');
-  for (const k of Object.keys(data)) {
-    if (charLen(data[k]) > LIMITS[k]) return bad(res, `${k[0].toUpperCase() + k.slice(1)} is too long (max ${LIMITS[k]} characters).`);
-  }
-  // Upsert only while the table is still unlocked (checked atomically)
-  const { rows } = await q(
-    `INSERT INTO submissions AS cur (table_id, title, theme, lyrics, style)
-       SELECT id, $2, $3, $4, $5 FROM event_tables WHERE id = $1 AND locked = FALSE
-     ON CONFLICT (table_id) DO UPDATE SET title = EXCLUDED.title, theme = EXCLUDED.theme,
-       lyrics = EXCLUDED.lyrics, style = EXCLUDED.style, updated_at = now(),
-       revision = cur.revision + 1
-     RETURNING *`,
-    [t.id, data.title, data.theme, data.lyrics, data.style]);
-  if (!rows[0]) return bad(res, 'Your table\'s song has been locked by the organizer.', 423);
-  res.json({ ok: true, submission: publicSubmission(rows[0]) });
+  if (!t) return bad(res, 'This team link is not valid.', 404);
+  if (t.locked) return bad(res, 'Ideas for this team are closed — the AI is already composing!', 423);
+  const { d, err } = readIdea(req.body || {}); if (err) return bad(res, err);
+  const { rows: cnt } = await q('SELECT COUNT(*)::int AS n FROM contributions WHERE table_id=$1', [t.id]);
+  if (cnt[0].n >= 80) return bad(res, 'This team already has plenty of ideas!', 429);
+  const tok = newToken();
+  const { rows } = await q('INSERT INTO contributions (table_id, name, idea, vibe, edit_token) VALUES ($1,$2,$3,$4,$5) RETURNING *', [t.id, d.name, d.idea, d.vibe, tok]);
+  res.json({ ok: true, mine: pubIdea(rows[0]), key: `${rows[0].id}.${tok}` });
+}));
+
+app.put('/api/t/:token/ideas/mine', wrap(async (req, res) => {
+  const t = await tableByToken(req.params.token);
+  if (!t) return bad(res, 'This team link is not valid.', 404);
+  if (t.locked) return bad(res, 'Ideas for this team are closed — the AI is already composing!', 423);
+  const c = await myIdea(req, t.id); if (!c) return bad(res, 'We could not find your idea on this device.', 404);
+  const { d, err } = readIdea(req.body || {}); if (err) return bad(res, err);
+  const { rows } = await q('UPDATE contributions SET name=$2, idea=$3, vibe=$4, updated_at=now() WHERE id=$1 RETURNING *', [c.id, d.name, d.idea, d.vibe]);
+  res.json({ ok: true, mine: pubIdea(rows[0]) });
+}));
+
+// ---------- public shared karaoke (only songs the organizer marked Ready/Played) ----------
+app.get('/api/karaoke', wrap(async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  const { rows } = await q(`SELECT t.number, t.name AS team_name, s.* FROM submissions s JOIN event_tables t ON t.id = s.table_id
+    WHERE s.status = ANY($1) ORDER BY t.number`, [LIVE]);
+  const songs = rows.map((r) => {
+    const p = parseProd(r.production) || { clips: [] };
+    const c = p.clips.find((x) => x.id === p.selected) || p.clips[0];
+    return { team: r.number, teamName: r.team_name, title: r.title, concept: r.concept, explanation: r.explanation, lyrics: r.lyrics,
+      clip: c ? { id: c.id, image: c.image, duration: c.duration, audioUrl: c.audioUrl || `https://cdn1.suno.ai/${c.id}.mp4`, alignment: c.alignment || null } : null };
+  }).filter((x) => x.clip);
+  res.json({ songs });
 }));
 
 // ---------- admin auth ----------
@@ -165,19 +195,23 @@ app.get('/api/admin/me', (req, res) => res.json({ admin: validSession(readCookie
 
 app.use('/api/admin', requireAdmin, (req, res, next) => { res.setHeader('Cache-Control', 'no-store'); next(); });
 
+function subOut(r) {
+  return { tableId: r.table_id, title: r.title, concept: r.concept, lyrics: r.lyrics, style: r.style, explanation: r.explanation,
+    status: r.status, revision: r.revision, createdAt: r.created_at, updatedAt: r.updated_at, generatedAt: r.generated_at,
+    approvedAt: r.approved_at, production: parseProd(r.production) };
+}
 // ---------- admin: state ----------
 app.get('/api/admin/state', wrap(async (req, res) => {
-  const [t, p, s] = await Promise.all([
-    q('SELECT id, number, name, capacity, token, locked FROM event_tables ORDER BY number'),
+  const [t, p, s, c] = await Promise.all([
+    q('SELECT id, number, name, capacity, token, locked, gen_requested_at FROM event_tables ORDER BY number'),
     q('SELECT id, name, table_id, seat FROM participants ORDER BY lower(name)'),
     q('SELECT * FROM submissions'),
+    q('SELECT id, table_id, name, idea, vibe, created_at, updated_at FROM contributions ORDER BY created_at'),
   ]);
   const base = baseUrl(req);
   const tables = t.rows.map((r) => ({ ...r, url: `${base}/t/${r.token}` }));
-  const subs = s.rows.map((r) => ({ tableId: r.table_id, title: r.title, theme: r.theme, lyrics: r.lyrics, style: r.style,
-    status: r.status, revision: r.revision, createdAt: r.created_at, updatedAt: r.updated_at,
-    production: typeof r.production === 'string' ? JSON.parse(r.production) : r.production || null }));
-  res.json({ baseUrl: base, tables, participants: p.rows, submissions: subs, statuses: STATUSES, limits: LIMITS });
+  const subs = s.rows.map(subOut);
+  res.json({ baseUrl: base, tables, participants: p.rows, submissions: subs, contributions: c.rows, statuses: STATUSES, vibes: VIBES, limits: LIMITS });
 }));
 
 // ---------- admin: tables ----------
@@ -275,7 +309,56 @@ app.delete('/api/admin/participants/:id', wrap(async (req, res) => {
 app.patch('/api/admin/submissions/:tableId', wrap(async (req, res) => {
   const status = (req.body || {}).status;
   if (!STATUSES.includes(status)) return bad(res, 'Unknown status.');
-  await q('UPDATE submissions SET status=$2 WHERE table_id=$1', [parseInt(req.params.tableId, 10), status]);
+  await q(`UPDATE submissions SET status=$2${status === 'Approved' ? ', approved_at=COALESCE(approved_at, now())' : ''} WHERE table_id=$1`, [parseInt(req.params.tableId, 10), status]);
+  res.json({ ok: true });
+}));
+// Ask the composer (Claude, via the organizer's loop) to write / rewrite the team's song.
+app.post('/api/admin/teams/:id/generate', wrap(async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  const { rows } = await q('SELECT COUNT(*)::int AS n FROM contributions WHERE table_id=$1', [id]);
+  if (!rows[0].n) return bad(res, 'This team has no ideas yet.');
+  await q('UPDATE event_tables SET gen_requested_at=now() WHERE id=$1', [id]);
+  res.json({ ok: true });
+}));
+app.post('/api/admin/teams/:id/cancel-generate', wrap(async (req, res) => {
+  await q('UPDATE event_tables SET gen_requested_at=NULL WHERE id=$1', [parseInt(req.params.id, 10)]);
+  res.json({ ok: true });
+}));
+// Write the proposal. source "ai" = the composer's draft (resets to Draft); otherwise an organizer edit.
+app.put('/api/admin/teams/:id/proposal', wrap(async (req, res) => {
+  const id = parseInt(req.params.id, 10); const b = req.body || {};
+  const d = { title: str(b.title), concept: str(b.concept), lyrics: str(b.lyrics), style: str(b.style), explanation: str(b.explanation) };
+  if (!d.title || !d.lyrics || !d.style) return bad(res, 'Title, lyrics and style are required.');
+  for (const k of Object.keys(d)) if (charLen(d[k]) > LIMITS[k]) return bad(res, `${k} is too long (max ${LIMITS[k]} characters).`);
+  const ai = b.source === 'ai';
+  const { rows } = await q(
+    `INSERT INTO submissions AS cur (table_id, title, concept, lyrics, style, explanation, status, theme, generated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,'Draft','',${ai ? 'now()' : 'NULL'})
+     ON CONFLICT (table_id) DO UPDATE SET title=EXCLUDED.title, concept=EXCLUDED.concept, lyrics=EXCLUDED.lyrics,
+       style=EXCLUDED.style, explanation=EXCLUDED.explanation, updated_at=now(), revision=cur.revision+1
+       ${ai ? ", generated_at=now(), status='Draft', approved_at=NULL, production=NULL" : ''}
+     RETURNING *`, [id, d.title, d.concept, d.lyrics, d.style, d.explanation]);
+  if (ai) await q('UPDATE event_tables SET gen_requested_at=NULL WHERE id=$1', [id]);
+  res.json({ ok: true, submission: subOut(rows[0]) });
+}));
+// Work queue for the composer/producer loop.
+app.get('/api/admin/queue', wrap(async (req, res) => {
+  const [t, s, c] = await Promise.all([
+    q('SELECT id, number, name, locked, gen_requested_at FROM event_tables ORDER BY number'),
+    q('SELECT * FROM submissions'), q('SELECT table_id, name, idea, vibe FROM contributions ORDER BY created_at')]);
+  const subs = new Map(s.rows.map((r) => [r.table_id, r]));
+  const generate = t.rows.filter((x) => x.gen_requested_at).map((x) => {
+    const prev = subs.get(x.id);
+    return { teamId: x.id, team: x.number, teamName: x.name,
+      previousTitle: prev ? prev.title : null,
+      ideas: c.rows.filter((i) => i.table_id === x.id).map((i) => ({ name: i.name, idea: i.idea, vibe: i.vibe || null })) };
+  });
+  const produce = t.rows.map((x) => subs.get(x.id)).filter((r) => r && r.status === 'Approved' && !(parseProd(r.production) || {}).clips?.length)
+    .map((r) => ({ teamId: r.table_id, team: t.rows.find((x) => x.id === r.table_id).number, revision: r.revision, title: r.title, lyrics: r.lyrics, style: r.style }));
+  res.json({ generate, produce });
+}));
+app.delete('/api/admin/contributions/:id', wrap(async (req, res) => {
+  await q('DELETE FROM contributions WHERE id=$1', [parseInt(req.params.id, 10)]);
   res.json({ ok: true });
 }));
 // Suno production results (written by the organizer's agent during the dinner).
@@ -335,8 +418,8 @@ app.get('/api/admin/export/seating.csv', wrap(async (req, res) => {
 }));
 app.get('/api/admin/export/songs.csv', wrap(async (req, res) => {
   const { rows } = await q(`SELECT t.number, s.* FROM submissions s JOIN event_tables t ON t.id = s.table_id ORDER BY t.number`);
-  const lines = ['Table,Title,Theme,Lyrics,Style,Status,Submitted,Last updated',
-    ...rows.map((r) => [r.number, r.title, r.theme, r.lyrics, r.style, r.status,
+  const lines = ['Team,Title,Concept,Lyrics,Style,Explanation,Status,Created,Last updated',
+    ...rows.map((r) => [r.number, r.title, r.concept, r.lyrics, r.style, r.explanation, r.status,
       new Date(r.created_at).toISOString(), new Date(r.updated_at).toISOString()].map(csvCell).join(','))];
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
   res.setHeader('Content-Disposition', 'attachment; filename="LFG-Zest-Xmas-2026-Songs.csv"');
@@ -354,6 +437,8 @@ app.get('/t/:token', page('table.html'));
 app.get('/admin', page('admin.html'));
 app.get('/admin/print-qr', page('print-qr.html'));
 app.get('/admin/karaoke/:tableId', page('karaoke.html'));
+app.get('/karaoke', page('karaoke-list.html'));
+app.get('/karaoke/:team', page('karaoke.html'));
 app.get('/health', async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   const hasDb = !!findDbUrl();
