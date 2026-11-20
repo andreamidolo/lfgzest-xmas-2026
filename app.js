@@ -130,11 +130,11 @@ app.put('/api/t/:token', wrap(async (req, res) => {
   }
   // Upsert only while the table is still unlocked (checked atomically)
   const { rows } = await q(
-    `INSERT INTO submissions (table_id, title, theme, lyrics, style)
+    `INSERT INTO submissions AS cur (table_id, title, theme, lyrics, style)
        SELECT id, $2, $3, $4, $5 FROM event_tables WHERE id = $1 AND locked = FALSE
      ON CONFLICT (table_id) DO UPDATE SET title = EXCLUDED.title, theme = EXCLUDED.theme,
        lyrics = EXCLUDED.lyrics, style = EXCLUDED.style, updated_at = now(),
-       revision = submissions.revision + 1
+       revision = cur.revision + 1
      RETURNING *`,
     [t.id, data.title, data.theme, data.lyrics, data.style]);
   if (!rows[0]) return bad(res, 'Your table\'s song has been locked by the organizer.', 423);

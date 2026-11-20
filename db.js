@@ -3,6 +3,10 @@ const path = require('path');
 
 let impl = null;
 
+// All app tables live in a dedicated schema, so the app can share a database safely.
+const SCHEMA = (process.env.DB_SCHEMA || 'xmas2026').replace(/[^a-z0-9_]/gi, '');
+const qualify = (sql) => sql.replace(/(^|[^.\w])(event_tables|participants|submissions)\b/g, `$1${SCHEMA}.$2`);
+
 // Accept DATABASE_URL / POSTGRES_URL, or any *_URL variable holding a postgres:// URL
 // (Vercel storage integrations may add a custom prefix, e.g. STORAGE_URL).
 function findDbUrl() {
@@ -29,7 +33,7 @@ async function init() {
       ssl: local ? false : { rejectUnauthorized: false },
       max: process.env.VERCEL ? 3 : 10,
     });
-    impl = { query: (text, params) => pool.query(text, params), kind: 'postgres' };
+    impl = { query: (text, params) => pool.query(qualify(text), params), kind: 'postgres' };
   } else {
     if (process.env.VERCEL) {
       throw new Error('DATABASE_URL (or POSTGRES_URL) is required in production (serverless has no persistent disk).');
@@ -39,7 +43,7 @@ async function init() {
     require('fs').mkdirSync(dir, { recursive: true });
     const db = new PGlite(dir);
     await db.waitReady;
-    impl = { query: (text, params) => db.query(text, params), kind: 'pglite' };
+    impl = { query: (text, params) => db.query(qualify(text), params), kind: 'pglite' };
   }
   await migrate(impl);
   return impl;
@@ -47,6 +51,7 @@ async function init() {
 
 async function migrate(db) {
   const stmts = [
+    `CREATE SCHEMA IF NOT EXISTS ${SCHEMA}`,
     `CREATE TABLE IF NOT EXISTS event_tables (
        id SERIAL PRIMARY KEY,
        number INTEGER NOT NULL UNIQUE,
