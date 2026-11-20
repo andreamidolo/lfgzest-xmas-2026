@@ -3,9 +3,23 @@ const path = require('path');
 
 let impl = null;
 
+// Accept DATABASE_URL / POSTGRES_URL, or any *_URL variable holding a postgres:// URL
+// (Vercel storage integrations may add a custom prefix, e.g. STORAGE_URL).
+function findDbUrl() {
+  const env = process.env;
+  const isPg = (v) => typeof v === 'string' && /^postgres(ql)?:\/\//.test(v);
+  for (const k of ['DATABASE_URL', 'POSTGRES_URL']) if (isPg(env[k])) return env[k];
+  const keys = Object.keys(env).filter((k) => isPg(env[k]));
+  const pick = keys.find((k) => /_URL$/.test(k) && !/UNPOOLED|NON_POOLING|NO_SSL/.test(k)) || keys[0];
+  return pick ? env[pick] : null;
+}
+function dbEnvKeys() {
+  return Object.keys(process.env).filter((k) => /^postgres(ql)?:\/\//.test(process.env[k] || '')).sort();
+}
+
 async function init() {
   if (impl) return impl;
-  const DB_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+  const DB_URL = findDbUrl();
   if (DB_URL) {
     const { Pool } = require('pg');
     const url = DB_URL;
@@ -64,4 +78,4 @@ async function migrate(db) {
   for (const s of stmts) await db.query(s);
 }
 
-module.exports = { init };
+module.exports = { init, findDbUrl, dbEnvKeys };

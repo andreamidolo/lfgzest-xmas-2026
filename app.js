@@ -3,7 +3,7 @@ const express = require('express');
 const path = require('path');
 const crypto = require('crypto');
 const QRCode = require('qrcode');
-const { init } = require('./db');
+const { init, findDbUrl, dbEnvKeys } = require('./db');
 
 const LIMITS = { title: 120, theme: 400, lyrics: 1000, style: 1000, name: 80 };
 const STATUSES = ['Submitted', 'In Production', 'Ready', 'Played'];
@@ -324,11 +324,11 @@ app.get('/admin', page('admin.html'));
 app.get('/admin/print-qr', page('print-qr.html'));
 app.get('/health', async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
-  const hasDb = !!(process.env.DATABASE_URL || process.env.POSTGRES_URL);
+  const hasDb = !!findDbUrl();
   try { await q('SELECT 1'); res.json({ ok: true, database: true, adminPasswordSet: !!process.env.ADMIN_PASSWORD }); }
   catch (e) {
     const msg = String(e && e.message || e).replace(/postgres(ql)?:\/\/[^\s]+/gi, '[url]').slice(0, 200);
-    res.status(500).json({ ok: false, databaseUrlSet: hasDb, adminPasswordSet: !!process.env.ADMIN_PASSWORD, error: msg, code: e && e.code });
+    res.status(500).json({ ok: false, databaseUrlSet: hasDb, dbVarNames: dbEnvKeys(), adminPasswordSet: !!process.env.ADMIN_PASSWORD, error: msg, code: e && e.code });
   }
 });
 app.use((req, res) => res.status(404).sendFile(path.join(pub, 'index.html')));
