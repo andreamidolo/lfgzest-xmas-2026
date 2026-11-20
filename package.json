@@ -1,0 +1,22 @@
+{
+  "name": "lfg-zest-xmas-2026",
+  "version": "1.0.0",
+  "description": "LFG+Zest Christmas Dinner 2026 — Music Challenge",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@electric-sql/pglite": "^0.5.17",
+    "express": "^4.22.3",
+    "pg": "^8.23.1",
+    "qrcode": "^1.5.4"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "private": true
+}

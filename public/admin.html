@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#082A33">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Mulish:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css">
+<link rel="icon" href="/brand/favicon.svg">
+<title>Organizer · LFG+Zest Christmas 2026</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="stylesheet" href="/admin.css">
+</head>
+<body>
+<!-- LOGIN -->
+<main id="loginView" class="wrap hidden" style="max-width:420px;padding-top:60px">
+  <div class="brandbar"><img src="/brand/lfg-zest-white.png" alt="LFG+Zest"><span class="sep"></span><img src="/brand/lfa-white.png" alt="LFA"></div>
+  <form id="loginForm" class="card" style="margin-top:26px;text-align:center">
+    <p class="eyebrow">Organizer access</p>
+    <h1 style="font-size:30px;margin:8px 0 18px;color:var(--champagne)">Christmas Dinner 2026</h1>
+    <input type="password" id="pw" placeholder="Admin password" autocomplete="current-password" required>
+    <div id="loginMsg" class="msg err hidden"></div>
+    <button class="btn btn-gold" style="width:100%;margin-top:14px">Sign in</button>
+  </form>
+</main>
+
+<!-- DASHBOARD -->
+<div id="appView" class="hidden">
+  <header class="topbar">
+    <div class="tb-brand">
+      <img src="/brand/lfg-zest-white.png" alt="LFG+Zest"><img src="/brand/lfa-white.png" alt="LFA">
+      <div><p class="eyebrow" style="letter-spacing:.24em">Organizer</p><div class="tb-title">Christmas Dinner 2026</div></div>
+    </div>
+    <nav class="tabs" role="tablist">
+      <button data-tab="songs" class="active">Songs</button>
+      <button data-tab="seating">Seating</button>
+      <button data-tab="qr">Tables &amp; QR</button>
+    </nav>
+    <div class="tb-right"><span id="live" class="live"><i></i>Live</span><button id="logout" class="btn btn-sm btn-ghost">Sign out</button></div>
+  </header>
+
+  <main class="admin">
+    <section class="stats">
+      <div class="stat"><b id="sTables">–</b><span>Tables</span></div>
+      <div class="stat"><b id="sSongs">–</b><span>Songs received</span></div>
+      <div class="stat"><b id="sGuests">–</b><span>Guests seated</span></div>
+      <div class="stat wide"><span>Submitted</span><div id="sDone" class="chips"></div><span style="margin-top:8px">Still waiting</span><div id="sWait" class="chips"></div></div>
+    </section>
+
+    <!-- SONGS -->
+    <section id="tab-songs" class="tab">
+      <div class="toolbar">
+        <h2>Song submissions</h2>
+        <div class="tb-actions">
+          <select id="songFilter" aria-label="Filter by status"><option value="">All statuses</option></select>
+          <button class="btn btn-sm" id="lockAll">Lock all</button>
+          <button class="btn btn-sm" id="unlockAll">Reopen all</button>
+          <a class="btn btn-sm" href="/api/admin/export/songs.csv">Export CSV</a>
+        </div>
+      </div>
+      <div id="songs" class="songs"></div>
+    </section>
+
+    <!-- SEATING -->
+    <section id="tab-seating" class="tab hidden">
+      <div class="toolbar">
+        <h2>Seating plan <span class="tiny" style="font-family:var(--font-body)">— recorded manually from the paper-card draw</span></h2>
+        <div class="tb-actions">
+          <a class="btn btn-sm" href="/api/admin/export/seating.csv">Export CSV</a>
+          <button class="btn btn-sm" onclick="window.print()">Print plan</button>
+        </div>
+      </div>
+      <div class="seat-grid">
+        <div class="card import">
+          <p class="eyebrow">Add guests</p>
+          <p class="tiny" style="margin:6px 0 10px">One guest per line. Optionally add table and seat: <code>Name, Table, Seat</code></p>
+          <textarea id="importBox" rows="7" placeholder="Maria Rossi&#10;John Smith, 3&#10;Anna Keller, 2, 5"></textarea>
+          <button id="importBtn" class="btn btn-gold" style="width:100%;margin-top:10px">Add guests</button>
+          <div id="importMsg" class="msg hidden"></div>
+          <div class="unassigned">
+            <p class="eyebrow" style="margin-top:22px">Unassigned <span id="unCount"></span></p>
+            <div id="unList"></div>
+          </div>
+        </div>
+        <div>
+          <div id="tableCards" class="table-cards"></div>
+          <div class="card" style="margin-top:16px">
+            <div class="toolbar" style="margin:0 0 10px"><p class="eyebrow">All guests</p><input type="text" id="guestSearch" placeholder="Search guest…" style="max-width:240px;padding:8px 12px"></div>
+            <div class="guest-table-wrap"><table class="guest-table"><thead><tr><th>Guest</th><th>Table</th><th>Seat</th><th></th></tr></thead><tbody id="guestRows"></tbody></table></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TABLES & QR -->
+    <section id="tab-qr" class="tab hidden">
+      <div class="toolbar">
+        <h2>Tables &amp; QR codes</h2>
+        <div class="tb-actions">
+          <button class="btn btn-sm" id="addTable">+ Add table</button>
+          <a class="btn btn-sm btn-gold" href="/admin/print-qr" target="_blank" rel="noopener">Print / save all QR codes</a>
+        </div>
+      </div>
+      <div id="baseWarn" class="msg info hidden"></div>
+      <div id="qrCards" class="qr-cards"></div>
+    </section>
+  </main>
+</div>
+<script src="/common.js"></script>
+<script src="/admin.js"></script>
+</body>
+</html>
