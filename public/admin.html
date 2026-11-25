@@ -34,9 +34,9 @@
       <div><p class="eyebrow" style="letter-spacing:.24em">Organizer</p><div class="tb-title">Christmas Dinner 2026</div></div>
     </div>
     <nav class="tabs" role="tablist">
-      <button data-tab="songs" class="active">Teams &amp; Songs</button>
+      <button data-tab="songs" class="active">Songs</button>
       <button data-tab="seating">Seating</button>
-      <button data-tab="qr">Teams &amp; QR</button>
+      <button data-tab="qr">Tables</button>
     </nav>
     <div class="tb-right"><span id="live" class="live"><i></i>Live</span><button id="logout" class="btn btn-sm btn-ghost">Sign out</button></div>
   </header>
@@ -52,18 +52,34 @@
     <!-- SONGS -->
     <section id="tab-songs" class="tab">
       <div class="toolbar">
-        <h2>Teams &amp; songs</h2>
+        <h2>Songs</h2>
         <div class="tb-actions">
-          <button class="btn btn-sm" id="lockAll">Close all ideas</button>
-          <button class="btn btn-sm" id="unlockAll">Reopen all</button>
-          <a class="btn btn-sm" href="/admin/board" target="_blank" rel="noopener">Team board ↗</a>
+          <button class="btn btn-sm" id="openBtn">…</button>
           <a class="btn btn-sm" href="/admin/applause" target="_blank" rel="noopener">👏 Applause Meter ↗</a>
-          <a class="btn btn-sm" href="/karaoke" target="_blank" rel="noopener">Shared Karaoke ↗</a>
-          <a class="btn btn-sm" href="/api/admin/export/songs.csv">Export CSV</a>
+          <a class="btn btn-sm" href="/admin/board" target="_blank" rel="noopener">Name board ↗</a>
+          <a class="btn btn-sm" href="/karaoke" target="_blank" rel="noopener">Karaoke ↗</a>
         </div>
       </div>
-      <p class="tiny" style="margin:-6px 0 14px">Flow: guests add ideas → <b>Close ideas</b> → <b>Generate song</b> (Claude composes) → edit or regenerate → <b>Approve</b> → Suno → pick a version → <b>Ready</b> (appears in the shared Karaoke).</p>
-      <div id="songs" class="songs"></div>
+      <div class="evbar">
+        <div class="evqr"><img id="evQr" alt="Event QR"></div>
+        <div class="evinfo">
+          <p class="eyebrow">One QR for everyone</p>
+          <div class="url" id="evUrl"></div>
+          <div class="row2"><button class="btn btn-sm" id="evCopy">Copy link</button><a class="btn btn-sm" id="evOpen" target="_blank" rel="noopener">Open</a>
+            <a class="btn btn-sm btn-gold" href="/admin/print-qr" target="_blank" rel="noopener">Print / save QR poster</a><a class="btn btn-sm" href="/api/admin/event/qr.png?download=1">Download PNG</a>
+            <button class="btn btn-sm btn-ghost" id="evRegen">New link</button></div>
+          <p class="tiny" style="margin-top:8px">Every song is polished by the AI and produced on Suno automatically (≈3 min after submission + 2–4 min in the studio) — the producer loop must be running.</p>
+        </div>
+        <div class="evstats" id="evStats"></div>
+      </div>
+      <div class="finals card">
+        <div class="toolbar" style="margin:0 0 10px"><h3 style="font-size:22px;color:var(--champagne)">🏆 The final</h3>
+          <div class="tb-actions"><button class="btn btn-sm btn-gold" id="autoFinal">Suggest top 3 by Effort Score</button></div></div>
+        <div class="fslots" id="fslots"></div>
+      </div>
+      <div class="toolbar" style="margin-top:22px"><h3 style="font-size:22px;color:var(--champagne)">All songs</h3>
+        <div class="tb-actions"><select id="sortBy"><option value="effort">Sort: Effort Score</option><option value="new">Sort: newest</option></select></div></div>
+      <div id="entries" class="entries"></div>
     </section>
 
     <!-- SEATING -->
@@ -113,5 +129,6 @@
 </div>
 <script src="/common.js"></script>
 <script src="/admin.js"></script>
+<script src="/admin-songs.js"></script>
 </body>
 </html>

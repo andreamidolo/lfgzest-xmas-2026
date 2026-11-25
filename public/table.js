@@ -78,6 +78,5 @@
     $('cancelEdit').classList.remove('hidden'); $('submitBtn').textContent = 'Update My Idea'; show('formView');
   });
   $('cancelEdit').addEventListener('click', () => { editing = false; render(); });
-  load(true);
-  setInterval(() => { if (!document.hidden) load(false); }, 15000);
+  $('fatalMsg').textContent = 'Please scan the QR code on your table to write your song.'; document.querySelector('#fatal h2').textContent = 'New format!'; show('fatal');
 })();

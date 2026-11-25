@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#082A33">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Mulish:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css">
+<link rel="icon" href="/brand/favicon.svg">
+<title>Write Your Christmas Song · LFG+Zest</title>
+<meta name="robots" content="noindex, nofollow">
+</head>
+<body>
+<main class="wrap">
+  <div class="brandbar"><img src="/brand/lfg-zest-white.png" alt="LFG+Zest"><span class="sep"></span><img src="/brand/lfa-white.png" alt="LFA"></div>
+  <section class="hero">
+    <div data-garland></div>
+    <p class="eyebrow" style="margin-top:12px">LFG+Zest Christmas Music Battle</p>
+    <h1>Write your<br><em>Christmas song!</em></h1>
+    <p class="sub">Everyone gets their own song, made with AI. The three best go to the grand final.</p>
+  </section>
+
+  <div id="loading" class="spinner" aria-label="Loading"></div>
+  <div id="fatal" class="card hidden" style="text-align:center"><h2 style="color:var(--champagne)" id="fatalTitle">Link not recognised</h2><p class="muted" id="fatalMsg"></p></div>
+
+  <section id="formView" class="hidden fade-in">
+    <form id="form" class="card" novalidate>
+      <div class="tipbox"><b>How to reach the final</b>Write more, write your own style, give it a title &mdash; the songs with the most effort and creativity go to the final.</div>
+      <div class="field">
+        <label for="name">Your name</label>
+        <input type="text" id="name" maxlength="40" autocomplete="off" placeholder="Start typing your name&hellip;">
+        <div class="vibes members" id="nameHits"></div>
+      </div>
+      <div class="field">
+        <label for="title">Song title <span class="opt">optional</span></label>
+        <input type="text" id="title" maxlength="80" autocomplete="off" placeholder="e.g. One Last Email, One Last Dance">
+      </div>
+      <div class="field">
+        <label for="lyrics">Lyrics</label>
+        <p class="hint">A few lines or a whole song &mdash; a memory, a story, an inside joke. English works best. The AI keeps your words and polishes them into a song.</p>
+        <textarea id="lyrics" rows="9" data-max="1500" placeholder="[Verse]&#10;The boss is answering emails at the table&#10;While the snow falls on the lake&#10;&#10;[Chorus]&#10;One last drink, one last dance&hellip;"></textarea>
+        <div class="counter" data-for="lyrics"></div>
+      </div>
+      <div class="field">
+        <label for="style">Style of music <span class="opt">optional, but it counts!</span></label>
+        <p class="hint">Describe the sound in your own words &mdash; genre, instruments, voice, mood. Tap a chip for inspiration.</p>
+        <textarea id="style" rows="3" data-max="400" placeholder="e.g. 80s disco-funk with slap bass, big brass, a soulful female voice and sleigh bells" style="min-height:90px"></textarea>
+        <div class="counter" data-for="style"></div>
+        <div class="vibes" id="chips"></div>
+      </div>
+      <div id="formMsg" class="msg err hidden" role="alert"></div>
+      <button type="submit" id="submitBtn" class="btn btn-gold btn-big">Submit My Song</button>
+      <button type="button" id="cancelEdit" class="btn btn-ghost hidden" style="width:100%;margin-top:10px">Cancel</button>
+    </form>
+  </section>
+
+  <section id="doneView" class="hidden fade-in">
+    <div class="card confirm">
+      <div class="star">&#10022;</div>
+      <h2 id="doneTitle">Your song is in!</h2>
+      <p class="muted" id="doneSub" style="margin:8px 0 0"></p>
+      <div style="margin-top:12px"><span id="doneStatus" class="status-pill"></span></div>
+      <button id="editBtn" class="btn btn-gold hidden" style="margin-top:16px;width:100%">Edit my song</button>
+    </div>
+    <div class="card proposal" id="mineCard">
+      <p class="eyebrow">What you wrote</p>
+      <h3 id="mTitle" style="margin-top:6px"></h3>
+      <div class="blk"><span class="eyebrow">Lyrics</span><pre id="mLyrics"></pre></div>
+      <div class="blk" id="mStyleBlk"><span class="eyebrow">Style</span><pre id="mStyle"></pre></div>
+    </div>
+  </section>
+
+  <section id="songView" class="hidden fade-in">
+    <div class="card proposal" style="text-align:center">
+      <p class="eyebrow" id="sEyebrow">Your song is ready</p>
+      <img id="sCover" alt="" style="width:100%;max-width:320px;border-radius:12px;margin:12px auto 0;display:block">
+      <h3 id="sTitle" style="margin-top:12px;font-size:28px"></h3>
+      <audio id="sAudio" controls preload="none" style="width:100%;margin-top:14px"></audio>
+      <div class="blk" style="text-align:left"><span class="eyebrow">Lyrics</span><pre id="sLyrics"></pre></div>
+      <p class="tiny" id="sNote" style="text-align:left;margin-top:10px"></p>
+      <a class="btn" href="/karaoke" style="margin-top:14px;width:100%">All the songs &rarr;</a>
+    </div>
+  </section>
+</main>
+<footer class="foot"><div class="logos"><img class="holding-logo" src="/brand/lfg-holding-white.png" alt="LFG Holding SA"></div>Ristorante Arbostora &middot; Morcote &middot; 27.11.2026</footer>
+<script src="/common.js"></script>
+<script src="/sing.js"></script>
+</body>
+</html>

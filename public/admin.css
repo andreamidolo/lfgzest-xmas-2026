@@ -130,3 +130,38 @@
 .mchips { display: flex; flex-wrap: wrap; gap: 6px; }
 .mchip { font-size: 13px; font-weight: 700; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--line-soft); color: var(--text-3); transition: all .5s; }
 .mchip.lit { color: #1B1407; background: linear-gradient(180deg, #EBD196, #C99F4F); border-color: #F0D9A4; box-shadow: 0 0 14px rgba(213, 178, 106, .55); }
+
+/* v4 songs */
+.stats { display: none; }
+.evbar { display: grid; grid-template-columns: 150px 1fr auto; gap: 18px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; }
+.evqr { background: #fff; border-radius: 8px; padding: 6px; } .evqr img { width: 100%; display: block; }
+.evinfo .url { font-family: ui-monospace, monospace; font-size: 12px; color: var(--text-2); word-break: break-all; margin: 4px 0 8px; }
+.row2 { display: flex; gap: 6px; flex-wrap: wrap; }
+.evstats { display: grid; grid-template-columns: repeat(3, auto); gap: 6px 18px; text-align: center; }
+.evstats b { display: block; font-family: var(--font-display); font-size: 28px; color: var(--champagne); font-weight: 500; line-height: 1; }
+.evstats span { font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: var(--text-3); font-weight: 800; }
+.finals { margin-top: 16px; }
+.fslots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.fslot { border: 1px dashed var(--line); border-radius: 10px; padding: 12px; min-height: 90px; display: flex; gap: 10px; align-items: center; }
+.fslot.on { border: 1px solid var(--gold); background: rgba(213, 178, 106, .08); }
+.fslot img { width: 64px; height: 64px; border-radius: 8px; object-fit: cover; }
+.fslot b { color: var(--champagne); font-family: var(--font-display); font-size: 17px; font-weight: 500; display: block; }
+.entries { display: flex; flex-direction: column; gap: 8px; }
+.ent { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+.ent.hid { opacity: .45; } .ent.fin { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold); }
+.ent-row { display: grid; grid-template-columns: 56px 1fr auto auto; gap: 12px; align-items: center; padding: 10px 12px; cursor: pointer; }
+.ent-row img, .ent-row .ph { width: 56px; height: 56px; border-radius: 8px; object-fit: cover; background: rgba(226, 237, 239, .06); display: grid; place-items: center; color: var(--text-3); }
+.ent-row .t b { color: var(--champagne); font-family: var(--font-display); font-size: 18px; font-weight: 500; }
+.ent-row .t small { display: block; color: var(--text-3); font-size: 12px; }
+.score { text-align: center; min-width: 64px; } .score b { font-family: var(--font-display); font-size: 26px; color: var(--gold); font-weight: 500; line-height: 1; display: block; }
+.score span { font-size: 10px; letter-spacing: .14em; color: var(--text-3); font-weight: 800; }
+.ent-acts { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+.ent-det { display: none; border-top: 1px solid var(--line-soft); padding: 12px; gap: 12px; grid-template-columns: 1fr 1fr; }
+.ent.open .ent-det { display: grid; }
+.ent-det pre { white-space: pre-wrap; font: inherit; font-size: 13px; margin: 4px 0 0; padding: 10px; border-radius: 8px; background: rgba(5, 30, 37, .6); border: 1px solid var(--line-soft); max-height: 280px; overflow: auto; }
+.ent-det .full { grid-column: 1 / -1; }
+.breakdown { font-size: 12px; color: var(--text-2); }
+.st-Received { color: var(--h-sky); border-color: rgba(85,182,230,.5); } .st-Composed { color: var(--warn); border-color: rgba(231,181,91,.5); } .st-Error { color: var(--err); border-color: var(--err); }
+/* tables tab: QR per table no longer used */
+#tab-qr .qimg, #tab-qr .url, #tab-qr [data-dl], #tab-qr [data-copyurl], #tab-qr a[target], #tab-qr [data-lock], #tab-qr [data-regen], #tab-qr #baseWarn, #tab-qr .tb-actions a { display: none !important; }
+@media (max-width: 900px) { .evbar { grid-template-columns: 110px 1fr; } .evstats { grid-column: 1 / -1; } .fslots { grid-template-columns: 1fr; } .ent-det { grid-template-columns: 1fr; } .ent-row { grid-template-columns: 48px 1fr auto; } .ent-acts { grid-column: 1 / -1; justify-content: flex-start; } }

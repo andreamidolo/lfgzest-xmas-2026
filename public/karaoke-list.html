@@ -26,6 +26,8 @@
   .kbody pre { white-space: pre-wrap; font: inherit; font-size: 16px; line-height: 1.6; margin: 10px 0 0; color: var(--text); }
   .kbody .expl { font-size: 14px; color: var(--text-2); }
   .empty { text-align: center; padding: 40px 16px; }
+  .sect { grid-column: 1 / -1; color: var(--champagne); font-size: 28px; margin-top: 10px; }
+  .kfin { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold), 0 20px 60px -20px rgba(213,178,106,.5); }
 </style>
 </head>
 <body>
@@ -35,7 +37,7 @@
     <div data-garland></div>
     <p class="eyebrow" style="margin-top:12px">LFG+Zest Christmas Dinner</p>
     <h1>Christmas<br><em>Karaoke</em></h1>
-    <p class="sub">Three teams, a handful of ideas each — and the songs the AI made of them.</p>
+    <p class="sub">Everyone wrote a song. Here they are &mdash; and the three finalists of the night.</p>
   </section>
   <div id="list" class="songs-grid"><div class="spinner"></div></div>
 </main>
@@ -47,19 +49,19 @@
   async function load() {
     if ([...document.querySelectorAll('audio')].some((a) => !a.paused)) return; // never interrupt playback
     let r; try { r = await api('/api/karaoke'); } catch (e) { return; }
-    const s = JSON.stringify(r.songs.map((x) => [x.team, x.title, x.clip.id])); if (s === sig) return; sig = s;
+    const s = JSON.stringify(r.songs.map((x) => [x.id, x.title, x.clip.id, x.finalist])); if (s === sig) return; sig = s;
     const el = document.getElementById('list');
     if (!r.songs.length) { el.innerHTML = '<div class="card empty" style="grid-column:1/-1"><div class="star" style="font-size:40px;color:var(--gold)">✦</div><h2 style="color:var(--champagne);margin-top:8px">The songs are in the studio</h2><p class="muted">They will appear here as soon as they are ready. Stay tuned!</p></div>'; return; }
-    el.innerHTML = r.songs.map((x) => `<article class="kcard">
-      <div class="kcover" style="background-image:url('${esc((x.clip.image || '').replace('image_', 'image_large_'))}')"><span class="team">Team ${x.team}${x.teamName ? ' · ' + esc(x.teamName) : ''}</span></div>
+    const card = (x) => `<article class="kcard ${x.finalist ? 'kfin' : ''}">
+      <div class="kcover" style="background-image:url('${esc((x.clip.image || '').replace('image_', 'image_large_'))}')"><span class="team">${x.finalist ? '🏆 Finalist · ' : ''}${esc(x.name)}</span></div>
       <div class="kbody">
         <h2>${esc(x.title)}</h2>
-        ${x.concept ? `<p class="concept">${esc(x.concept)}</p>` : ''}
         <audio controls preload="none" src="${esc(x.clip.audioUrl)}"></audio>
-        <a class="btn btn-gold" href="/karaoke/${x.team}">▶ Sing along (big screen)</a>
+        <a class="btn ${x.finalist ? 'btn-gold' : ''}" href="/karaoke/${x.id}">▶ Sing along (big screen)</a>
         <details><summary>Lyrics</summary><pre>${esc(x.lyrics.replace(/^\s*\[[^\]]*\]\s*$/gm, '').replace(/\n{3,}/g, '\n\n').trim())}</pre></details>
-        ${x.explanation ? `<details><summary>What we did with your ideas</summary><p class="expl">${esc(x.explanation)}</p></details>` : ''}
-      </div></article>`).join('');
+      </div></article>`;
+    const fin = r.songs.filter((x) => x.finalist), rest = r.songs.filter((x) => !x.finalist);
+    el.innerHTML = (fin.length ? `<h2 class="sect">🏆 The final</h2>${fin.map(card).join('')}${rest.length ? '<h2 class="sect">All the songs</h2>' : ''}` : '') + rest.map(card).join('');
   }
   load(); setInterval(() => { if (!document.hidden) load(); }, 15000);
 })();

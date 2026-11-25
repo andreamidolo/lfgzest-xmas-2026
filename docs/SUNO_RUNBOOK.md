@@ -1,56 +1,40 @@
-# Let's Make a Song — runbook for the dinner
+# Christmas Music Battle — runbook (individual songs)
 
 ## The format
-3 teams · one QR per team · individual ideas (max 160 chars, ~30 s per person) · 3 songs composed by AI.
+- One QR for everyone (`/sing/<token>`, printed from **Songs → Print / save QR poster**).
+- Each guest writes: name (picked from the guest list), optional title, lyrics (≤ 1500 chars), style in their own words (≤ 400 chars, optional).
+- They can edit for **3 minutes**; then the composer polishes it and it is produced on Suno automatically. The finished song appears on their phone.
+- **Effort Score (0–100)**: lyrics length 45 · structure 5 · own style 15 · title 5 (computed by the app) + care & originality 30 (judged by the composer).
+- Organizer: **Suggest top 3 by Effort Score** → adjust with ★ → the 3 finalists go to the Karaoke final and the **Applause Meter**.
 
-1. **Aperitivo** — each guest scans their team's QR and adds: name, a small idea (a memory, a situation, a line), optionally a music vibe.
-   Nobody has to contribute; no counters are shown to guests.
-2. **After ~5 minutes** — organizer presses **Close ideas** (per team or "Close all ideas").
-3. **Generate song** — organizer presses it per team. The producer loop (Claude) composes the proposal.
-4. **Review** — edit any field, or **Regenerate**. Then **Approve & produce**.
-5. **Suno** — the loop produces 2 versions, publishes them, fetches the word timings.
-6. **Pick a version → set status Ready** — the song appears in the shared **Karaoke** (`/karaoke`) and the team page reveals the title + "What we did with your ideas".
-
-## Start the loop (≈2 hours)
-In the Claude session that has the Suno connector:
-
+## The loop (every 2 minutes, in the Claude session with the Suno connector)
 ```
 /loop 2m Let's Make a Song: run one pass of docs/SUNO_RUNBOOK.md in andreamidolo/lfgzest-xmas-2026
 ```
 
 ### One pass
-Log in: `POST https://lfgzest-xmas-2026.vercel.app/api/admin/login {"password": ...}` (cookie), then `GET /api/admin/queue`.
+Log in: `POST https://lfgzest-xmas-2026.vercel.app/api/admin/login {"password": ...}` (cookie jar), then `GET /api/admin/queue2`.
 
-**A. For each item in `generate`** — act as composer/music editor and `PUT /api/admin/teams/<teamId>/proposal` with
-`{"source":"ai", title, concept, lyrics, style, explanation}`:
-- Read all ideas; pick the ones that work best together and find the most interesting common thread. Do not try to use every idea or merge every requested genre.
-- Music: one main genre, at most one secondary, one small extra influence. Memorable chorus, cheerful and pleasant. No aggressive combinations, no abrupt genre switches. Weigh the guests' vibes; "Surprise me!" = free choice.
-- `style`: Suno style prompt, ≤ 1000 characters (genre, BPM, instruments, vocal, mood).
-- `lyrics`: English, for a song of ~75–90 s: [Verse] / [Pre-Chorus] / [Chorus] / [Verse] / [Chorus] / [Outro], short lines, the hook repeated.
-- `concept`: one sentence. `explanation`: 3–5 sentences naming contributors by first name and saying what became of their idea (shown to the team after approval).
-- If `previousTitle` is set this is a **regeneration**: write a clearly different take.
+**A. compose** — for each entry, `PUT /api/admin/entries/<id>/composed` with
+`{songTitle, songLyrics, songStyle, aiNote, effortAi (0–30), effortNote}`:
+- **Refine, don't rewrite.** Keep the guest's words. Long lyrics: only add section tags ([Verse]/[Chorus]…), fix obvious typos, maybe repeat their best line as the chorus. Short lyrics (a few lines): expand into a ~75–90 s song built around their lines and theme, English.
+- Title: theirs if given, else invent one from their words.
+- `songStyle` ≤ 1000 chars: start from their style text; make it Suno-ready (genre, BPM, instruments, vocal, mood). One main genre, max one secondary + a small influence; cheerful, catchy, no aggressive mixes. No style given → choose one that fits the lyrics, festive.
+- Keep it fun but tasteful (no cruelty, nothing offensive about colleagues); soften if needed and say so in `aiNote`.
+- `aiNote`: one friendly sentence for the guest on what you did (shown with their song).
+- `effortAi` 0–30 for care & originality (inside jokes, imagery, rhyme, a real story = high; one generic line = low). `effortNote`: a few words why (organizer only).
 
-**B. For each item in `produce`** (approved, not yet produced):
-1. `PATCH /api/admin/submissions/<teamId> {"status":"In Production"}`
-2. Suno `audio-create` custom mode (`title`, `lyrics`, `style`, `duration` 90), `idempotency_key = lfgz-xmas-<teamId>-r<revision>`
-3. `audio-wait` both clip ids until `complete`
-4. `audio-settings visibility=public` on both (the karaoke streams `https://cdn1.suno.ai/<id>.mp4`, reachable only when published)
-5. `audio-lyrics-alignment` on both, poll until `complete`
-6. `PUT /api/admin/submissions/<teamId>/production` with `clips: [{id, title, duration, image, audioUrl: "https://cdn1.suno.ai/<id>.mp4", alignment: words}]`
-   (status stays In Production: the organizer listens, picks the version and sets **Ready**.)
+**B. produce** — for each entry in `produce` (status Composed):
+1. `PATCH /api/admin/entries/<id> {"status":"In Production"}`
+2. Suno `audio-create` custom mode: title, lyrics, style, `duration` 90, `idempotency_key = lfgz-xmas-e<id>-<updatedAt-ish or attempt>`. Start all of them before waiting.
+3. `audio-wait` with all clip ids until complete.
+4. `audio-settings visibility=public` on both versions (the karaoke streams `https://cdn1.suno.ai/<id>.mp4`, reachable only when published).
+5. `audio-lyrics-alignment` on both, poll until `complete` (best effort; skip on `unavailable`).
+6. `PUT /api/admin/entries/<id>/production` with `clips: [{id, title, duration, image, audioUrl, alignment}]` and `"status":"Ready"`.
+On a Suno error: status `Error` and continue with the others.
 
-Never generate for a team that was not requested, never produce a song that is not Approved.
+Never produce hidden entries; never re-produce Ready ones unless the organizer pressed **Redo**.
 
-## Karaoke
-- Shared: `/karaoke` (everyone) and `/karaoke/<team>` (big screen, words highlighted in time).
-- Organizer preview: `/admin/karaoke/<teamId>` (any status).
-- Keys: Space play/pause · F full screen · ←/→ shift lyrics ±0.2 s.
-
-## Finale: Applause Meter
-`/admin/applause` (organizer laptop on the projector, opened from the published https URL).
-1. **Enable microphone** (allow access). Auto-gain, noise suppression and echo cancellation are switched off where the browser allows it.
-2. Optional **Test** to see the level.
-3. After each song: stop the music → **Measure Team N** (or press 1/2/3) → 3 s countdown → 7 s of applause.
-   Score = average intensity over the 7 s, mapped to 0–100 (comparative, not calibrated dB). Only the number is stored, never audio.
-4. **Reveal winner** (or R): bars grow, crown + confetti. Differences under 0.5 pts = tie.
-Same mic, same spot, same distance for all three teams.
+## Final
+- Karaoke: `/karaoke` (finalists first) and `/karaoke/<id>` (big screen, words in time). Organizer preview `/admin/karaoke/<id>`.
+- Applause Meter: `/admin/applause` — measures the 3 finalists, reveals the winner.

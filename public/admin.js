@@ -139,7 +139,7 @@
     </article>`;
   }
   function renderTeams(force) {
-    const box = $('songs');
+    const box = $('songs'); if (!box) return;
     if (!S.tables.length) { box.innerHTML = '<p class="muted">No teams.</p>'; return; }
     // per-team diff so a card being edited is never clobbered
     const want = S.tables.map((t) => t.id).join(',');
@@ -158,11 +158,11 @@
   function updCounts(root) {
     root.querySelectorAll('[data-cnt]').forEach((c) => { const ta = root.querySelector(`[data-f="${c.dataset.cnt}"]`); c.textContent = `${clen(ta.value)} / ${ta.maxLength}`; });
   }
-  $('songs').addEventListener('input', (e) => {
+  if ($('songs')) $('songs').addEventListener('input', (e) => {
     const card = e.target.closest('.song[data-t]'); if (!card || !e.target.dataset.f) return;
     dirty.add(+card.dataset.t); card.querySelector('[data-save]').disabled = false; updCounts(card);
   });
-  $('songs').addEventListener('click', async (e) => {
+  if ($('songs')) $('songs').addEventListener('click', async (e) => {
     const card = e.target.closest('.song[data-t]'); if (!card) return;
     const id = +card.dataset.t; const t = tableById(id); const s = subByTable(id);
     const val = (f) => card.querySelector(`[data-f="${f}"]`).value;
@@ -190,14 +190,14 @@
     const d = e.target.closest('[data-delidea]');
     if (d && confirm('Remove this idea?')) act(`/api/admin/contributions/${d.dataset.delidea}`, 'DELETE', undefined, 'Idea removed');
   });
-  $('songs').addEventListener('change', (e) => {
+  if ($('songs')) $('songs').addEventListener('change', (e) => {
     const card = e.target.closest('.song[data-t]'); if (!card) return; const id = +card.dataset.t;
     if (e.target.matches('[data-sel]')) act(`/api/admin/submissions/${id}/production`, 'PUT', { selected: e.target.value }, 'Version selected');
     if (e.target.matches('[data-status]')) act(`/api/admin/submissions/${id}`, 'PATCH', { status: e.target.value }, 'Status: ' + e.target.value);
   });
 
-  $('lockAll').addEventListener('click', () => confirm('Close ideas for ALL teams?') && act('/api/admin/lock-all', 'POST', { locked: true }, 'All ideas closed'));
-  $('unlockAll').addEventListener('click', () => act('/api/admin/lock-all', 'POST', { locked: false }, 'All teams reopened'));
+  if ($('lockAll')) $('lockAll').addEventListener('click', () => confirm('Close ideas for ALL teams?') && act('/api/admin/lock-all', 'POST', { locked: true }, 'All ideas closed'));
+  if ($('unlockAll')) $('unlockAll').addEventListener('click', () => act('/api/admin/lock-all', 'POST', { locked: false }, 'All teams reopened'));
 
   // ---------- seating (manual only) ----------
   function tableOptions(sel) {

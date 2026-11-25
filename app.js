@@ -163,20 +163,6 @@ app.put('/api/t/:token/ideas/mine', wrap(async (req, res) => {
   res.json({ ok: true, mine: pubIdea(rows[0]) });
 }));
 
-// ---------- public shared karaoke (only songs the organizer marked Ready/Played) ----------
-app.get('/api/karaoke', wrap(async (req, res) => {
-  res.setHeader('Cache-Control', 'no-store');
-  const { rows } = await q(`SELECT t.number, t.name AS team_name, s.* FROM submissions s JOIN event_tables t ON t.id = s.table_id
-    WHERE s.status = ANY($1) ORDER BY t.number`, [LIVE]);
-  const songs = rows.map((r) => {
-    const p = parseProd(r.production) || { clips: [] };
-    const c = p.clips.find((x) => x.id === p.selected) || p.clips[0];
-    return { team: r.number, teamName: r.team_name, title: r.title, concept: r.concept, explanation: r.explanation, lyrics: r.lyrics,
-      clip: c ? { id: c.id, image: c.image, duration: c.duration, audioUrl: c.audioUrl || `https://cdn1.suno.ai/${c.id}.mp4`, alignment: c.alignment || null } : null };
-  }).filter((x) => x.clip);
-  res.json({ songs });
-}));
-
 // ---------- admin auth ----------
 app.post('/api/admin/login', wrap(async (req, res) => {
   if (!ADMIN_PASSWORD) return bad(res, 'ADMIN_PASSWORD is not configured on the server.', 503);
@@ -445,6 +431,175 @@ app.get('/api/admin/export/songs.csv', wrap(async (req, res) => {
   res.send('﻿' + lines.join('\n'));
 }));
 
+// ======================================================================
+// v4 — Individual songs. One QR for everyone; every entry becomes a song;
+// an Effort Score proposes 3 finalists; the organizer confirms.
+// ======================================================================
+const ELIM = { name: 40, title: 80, lyrics: 1500, style: 400 };
+const GRACE_MIN = 3; // minutes a guest can still fix their entry before it is composed
+async function setting(key) { const { rows } = await q('SELECT value FROM settings WHERE key=$1', [key]); return rows[0] ? rows[0].value : null; }
+async function setSetting(key, value) { await q('INSERT INTO settings (key, value) VALUES ($1,$2) ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value', [key, String(value)]); }
+async function eventToken() { let t = await setting('event_token'); if (!t) { t = newToken(); await setSetting('event_token', t); } return t; }
+async function eventOpen() { return (await setting('entries_open')) !== 'false'; }
+async function checkEventToken(tok) { const t = await eventToken(); return typeof tok === 'string' && tok.length === t.length && crypto.timingSafeEqual(Buffer.from(tok), Buffer.from(t)); }
+
+// Effort Score (0–100): what the guest wrote (up to 70, computed here) + care/originality judged by the composer (up to 30).
+function effort(e) {
+  const ly = Array.from(e.lyrics || '').length, st = Array.from(e.style || '').length;
+  const lines = (e.lyrics || '').split('\n').filter((l) => l.trim()).length;
+  const parts = {
+    lyrics: Math.round(Math.min(1, ly / 700) * 45),
+    structure: lines >= 8 ? 5 : lines >= 4 ? 3 : 0,
+    style: st >= 60 ? 15 : st >= 20 ? 10 : st > 0 ? 5 : 0,
+    title: (e.title || '').trim() ? 5 : 0,
+    ai: e.effort_ai == null ? null : Math.max(0, Math.min(30, Math.round(e.effort_ai))),
+  };
+  return { total: parts.lyrics + parts.structure + parts.style + parts.title + (parts.ai || 0), parts };
+}
+function entryOut(e) {
+  const p = parseProd(e.production);
+  return { id: e.id, participantId: e.participant_id, name: e.name, title: e.title, lyrics: e.lyrics, style: e.style, status: e.status,
+    songTitle: e.song_title, songLyrics: e.song_lyrics, songStyle: e.song_style, aiNote: e.ai_note, effortNote: e.effort_note,
+    effort: effort(e), production: p, hidden: e.hidden, finalist: e.finalist,
+    applauseScore: e.applause_score, applausePeak: e.applause_peak, createdAt: e.created_at, updatedAt: e.updated_at };
+}
+function clipOf(p) { p = parseProd(p); if (!p || !p.clips || !p.clips.length) return null; const c = p.clips.find((x) => x.id === p.selected) || p.clips[0];
+  return { id: c.id, image: c.image, duration: c.duration, audioUrl: c.audioUrl || `https://cdn1.suno.ai/${c.id}.mp4`, alignment: c.alignment || null }; }
+async function myEntry(req) {
+  const [id, tok] = String(req.get('x-entry') || '').split('.');
+  if (!id || !tok) return null;
+  const { rows } = await q('SELECT * FROM entries WHERE id=$1', [parseInt(id, 10) || 0]);
+  const e = rows[0];
+  if (!e || e.edit_token.length !== tok.length || !crypto.timingSafeEqual(Buffer.from(e.edit_token), Buffer.from(tok))) return null;
+  return e;
+}
+async function readEntry(b) {
+  const d = { name: str(b.name), title: str(b.title), lyrics: str(b.lyrics), style: str(b.style), participantId: null };
+  const pid = parseInt(b.participantId, 10);
+  if (pid) { const { rows } = await q('SELECT id, name FROM participants WHERE id=$1', [pid]); if (rows[0]) { d.participantId = rows[0].id; d.name = rows[0].name; } }
+  if (!d.name) return { err: 'Please tell us your name.' };
+  if (!d.lyrics) return { err: 'Write your lyrics — a few lines are enough, a whole song is even better!' };
+  for (const k of ['name', 'title', 'lyrics', 'style']) if (charLen(d[k]) > ELIM[k]) return { err: `${k[0].toUpperCase() + k.slice(1)} is too long (max ${ELIM[k]} characters).` };
+  return { d };
+}
+function guestSong(e) {
+  if (!e || e.hidden || e.status !== 'Ready') return null;
+  const c = clipOf(e.production); if (!c) return null;
+  return { id: e.id, title: e.song_title || e.title, lyrics: e.song_lyrics || e.lyrics, note: e.ai_note, clip: c, finalist: e.finalist };
+}
+
+app.get('/api/s/:token', wrap(async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  if (!(await checkEventToken(req.params.token))) return bad(res, 'This link is not valid. Please scan the QR code again.', 404);
+  const [mine, { rows: members }] = await Promise.all([myEntry(req), q('SELECT id, name FROM participants ORDER BY lower(name)')]);
+  res.json({ open: await eventOpen(), members, mine: mine && { id: mine.id, participantId: mine.participant_id, name: mine.name, title: mine.title, lyrics: mine.lyrics, style: mine.style,
+    status: mine.status, editable: mine.status === 'Received' }, song: guestSong(mine), limits: ELIM, graceMin: GRACE_MIN });
+}));
+app.post('/api/s/:token/entries', wrap(async (req, res) => {
+  if (!(await checkEventToken(req.params.token))) return bad(res, 'This link is not valid.', 404);
+  if (!(await eventOpen())) return bad(res, 'Submissions are closed — the songs are being produced!', 423);
+  const { d, err } = await readEntry(req.body || {}); if (err) return bad(res, err);
+  const { rows: n } = await q('SELECT COUNT(*)::int AS n FROM entries'); if (n[0].n >= 200) return bad(res, 'We have plenty of songs already!', 429);
+  const tok = newToken();
+  const { rows } = await q('INSERT INTO entries (participant_id, name, title, lyrics, style, edit_token) VALUES ($1,$2,$3,$4,$5,$6) RETURNING *', [d.participantId, d.name, d.title, d.lyrics, d.style, tok]);
+  res.json({ ok: true, key: `${rows[0].id}.${tok}` });
+}));
+app.put('/api/s/:token/entries/mine', wrap(async (req, res) => {
+  if (!(await checkEventToken(req.params.token))) return bad(res, 'This link is not valid.', 404);
+  const e = await myEntry(req); if (!e) return bad(res, 'We could not find your song on this device.', 404);
+  if (e.status !== 'Received') return bad(res, 'Your song is already in the studio — it can no longer be changed.', 423);
+  const { d, err } = await readEntry(req.body || {}); if (err) return bad(res, err);
+  await q("UPDATE entries SET participant_id=$2, name=$3, title=$4, lyrics=$5, style=$6, updated_at=now() WHERE id=$1 AND status='Received'", [e.id, d.participantId, d.name, d.title, d.lyrics, d.style]);
+  res.json({ ok: true });
+}));
+
+// Public karaoke: finalists first, then every other finished song.
+app.get('/api/karaoke', wrap(async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  const { rows } = await q("SELECT * FROM entries WHERE status='Ready' AND hidden=FALSE ORDER BY finalist DESC, id");
+  const songs = rows.map((e) => ({ id: e.id, name: e.name, title: e.song_title || e.title, lyrics: e.song_lyrics || e.lyrics, note: e.ai_note, finalist: e.finalist, clip: clipOf(e.production) })).filter((x) => x.clip);
+  res.json({ songs });
+}));
+
+// ---- admin
+app.get('/api/admin/v4', wrap(async (req, res) => {
+  const [{ rows }, { rows: ps }] = await Promise.all([q('SELECT * FROM entries ORDER BY id'), q('SELECT id, name, table_id FROM participants ORDER BY lower(name)')]);
+  const tok = await eventToken();
+  res.json({ event: { open: await eventOpen(), url: `${baseUrl(req)}/sing/${tok}`, token: tok }, entries: rows.map(entryOut), participants: ps, limits: ELIM, graceMin: GRACE_MIN });
+}));
+app.patch('/api/admin/event', wrap(async (req, res) => {
+  if ('open' in (req.body || {})) await setSetting('entries_open', req.body.open ? 'true' : 'false');
+  res.json({ ok: true });
+}));
+app.post('/api/admin/event/regenerate', wrap(async (req, res) => { await setSetting('event_token', newToken()); res.json({ ok: true }); }));
+app.get('/api/admin/event/qr.png', wrap(async (req, res) => {
+  const url = `${baseUrl(req)}/sing/${await eventToken()}`;
+  const buf = await QRCode.toBuffer(url, { width: 900, margin: 2, errorCorrectionLevel: 'M', color: { dark: '#0B2E37', light: '#FFFFFF' } });
+  res.setHeader('Content-Type', 'image/png');
+  if (req.query.download) res.setHeader('Content-Disposition', 'attachment; filename="LFG-Zest-Xmas-Song-QR.png"');
+  res.send(buf);
+}));
+app.patch('/api/admin/entries/:id', wrap(async (req, res) => {
+  const id = parseInt(req.params.id, 10); const b = req.body || {};
+  if ('hidden' in b) await q('UPDATE entries SET hidden=$2, finalist=CASE WHEN $2 THEN FALSE ELSE finalist END WHERE id=$1', [id, !!b.hidden]);
+  if ('finalist' in b) {
+    if (b.finalist) { const { rows } = await q('SELECT COUNT(*)::int AS n FROM entries WHERE finalist AND id<>$1', [id]); if (rows[0].n >= 3) return bad(res, 'There are already 3 finalists — remove one first.', 409); }
+    await q('UPDATE entries SET finalist=$2 WHERE id=$1', [id, !!b.finalist]);
+  }
+  if (b.status && ['Received', 'Composed', 'In Production', 'Ready', 'Error'].includes(b.status)) await q('UPDATE entries SET status=$2 WHERE id=$1', [id, b.status]);
+  res.json({ ok: true });
+}));
+app.post('/api/admin/entries/finalists/auto', wrap(async (req, res) => { // top 3 by Effort Score among finished, visible songs
+  const { rows } = await q("SELECT * FROM entries WHERE status='Ready' AND hidden=FALSE");
+  const top = rows.map((e) => ({ id: e.id, s: effort(e).total })).sort((x, y) => y.s - x.s).slice(0, 3).map((x) => x.id);
+  await q('UPDATE entries SET finalist = (id = ANY($1))', [top]);
+  res.json({ ok: true, finalists: top });
+}));
+app.post('/api/admin/entries/:id/redo', wrap(async (req, res) => {
+  await q("UPDATE entries SET status='Received', production=NULL, song_title=NULL, song_lyrics=NULL, song_style=NULL, ai_note=NULL, updated_at=now() - interval '1 hour' WHERE id=$1", [parseInt(req.params.id, 10)]);
+  res.json({ ok: true });
+}));
+app.delete('/api/admin/entries/:id', wrap(async (req, res) => { await q('DELETE FROM entries WHERE id=$1', [parseInt(req.params.id, 10)]); res.json({ ok: true }); }));
+// Composer writes the refined song + its share of the Effort Score.
+app.put('/api/admin/entries/:id/composed', wrap(async (req, res) => {
+  const b = req.body || {}; const id = parseInt(req.params.id, 10);
+  const d = { t: str(b.songTitle), l: str(b.songLyrics), s: str(b.songStyle), n: str(b.aiNote), en: str(b.effortNote) };
+  if (!d.t || !d.l || !d.s) return bad(res, 'songTitle, songLyrics and songStyle are required.');
+  if (charLen(d.s) > 1000 || charLen(d.l) > 4000) return bad(res, 'Too long for Suno.');
+  const ai = Math.max(0, Math.min(30, Number(b.effortAi) || 0));
+  const { rows } = await q("UPDATE entries SET song_title=$2, song_lyrics=$3, song_style=$4, ai_note=$5, effort_ai=$6, effort_note=$7, status='Composed' WHERE id=$1 AND status IN ('Received','Composed') RETURNING id",
+    [id, d.t, d.l, d.s, d.n, ai, d.en]);
+  if (!rows[0]) return bad(res, 'Entry is not waiting for composition.', 409);
+  res.json({ ok: true });
+}));
+app.put('/api/admin/entries/:id/production', wrap(async (req, res) => {
+  const b = req.body || {}; const id = parseInt(req.params.id, 10);
+  const { rows } = await q('SELECT production FROM entries WHERE id=$1', [id]); if (!rows[0]) return bad(res, 'Not found', 404);
+  const cur = parseProd(rows[0].production) || { clips: [] };
+  if (Array.isArray(b.clips)) { const m = new Map(cur.clips.map((c) => [c.id, c])); for (const c of b.clips.slice(0, 6)) { const cc = cleanClip(c); if (cc) m.set(cc.id, { ...m.get(cc.id), ...Object.fromEntries(Object.entries(cc).filter(([, v]) => v != null)) }); } cur.clips = [...m.values()].slice(-6); }
+  if (b.selected !== undefined && cur.clips.some((c) => c.id === b.selected)) cur.selected = b.selected;
+  if (!cur.selected && cur.clips[0]) cur.selected = cur.clips[0].id;
+  await q('UPDATE entries SET production=$2 WHERE id=$1', [id, JSON.stringify(cur)]);
+  if (b.status && ['In Production', 'Ready', 'Error'].includes(b.status)) await q('UPDATE entries SET status=$2 WHERE id=$1', [id, b.status]);
+  res.json({ ok: true, production: cur });
+}));
+app.get('/api/admin/queue2', wrap(async (req, res) => {
+  const force = req.query.now === '1';
+  const { rows } = await q(`SELECT * FROM entries WHERE hidden=FALSE AND (status='Composed' OR (status='Received' AND (${force ? 'TRUE' : `updated_at < now() - interval '${GRACE_MIN} minutes'`}))) ORDER BY id`);
+  res.json({
+    compose: rows.filter((e) => e.status === 'Received').map((e) => ({ id: e.id, name: e.name, title: e.title, lyrics: e.lyrics, style: e.style })),
+    produce: rows.filter((e) => e.status === 'Composed').map((e) => ({ id: e.id, name: e.name, songTitle: e.song_title, songLyrics: e.song_lyrics, songStyle: e.song_style })),
+  });
+}));
+app.put('/api/admin/entries/:id/applause', wrap(async (req, res) => {
+  const b = req.body || {}; const id = parseInt(req.params.id, 10);
+  if (b.score === null) { await q('UPDATE entries SET applause_score=NULL, applause_peak=NULL, applause_at=NULL WHERE id=$1', [id]); return res.json({ ok: true }); }
+  const s = Number(b.score), p = Number(b.peak); if (!(s >= 0 && s <= 100)) return bad(res, 'Invalid score.');
+  await q('UPDATE entries SET applause_score=$2, applause_peak=$3, applause_at=now() WHERE id=$1', [id, Math.round(s * 10) / 10, p >= 0 && p <= 100 ? Math.round(p * 10) / 10 : null]);
+  res.json({ ok: true });
+}));
+app.delete('/api/admin/entries-applause', wrap(async (req, res) => { await q('UPDATE entries SET applause_score=NULL, applause_peak=NULL, applause_at=NULL'); res.json({ ok: true }); }));
+
 app.use('/api', (req, res) => bad(res, 'Not found', 404));
 
 // ---------- pages ----------
@@ -459,7 +614,8 @@ app.get('/admin/board', page('board.html'));
 app.get('/admin/applause', page('applause.html'));
 app.get('/admin/karaoke/:tableId', page('karaoke.html'));
 app.get('/karaoke', page('karaoke-list.html'));
-app.get('/karaoke/:team', page('karaoke.html'));
+app.get('/karaoke/:id', page('karaoke.html'));
+app.get('/sing/:token', page('sing.html'));
 app.get('/health', async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   const hasDb = !!findDbUrl();

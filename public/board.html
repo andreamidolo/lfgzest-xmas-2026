@@ -37,8 +37,8 @@
 <div class="board">
   <div class="bhead">
     <div class="logos"><img src="/brand/lfg-zest-white.png" alt="LFG+Zest"><img src="/brand/lfa-white.png" alt="LFA"></div>
-    <h1>Let&rsquo;s Make <em>a Song!</em></h1>
-    <p>Scan your team&rsquo;s QR and add your little piece of madness &mdash; watch your name light up.</p>
+    <h1>Write your <em>Christmas song!</em></h1>
+    <p>Scan the QR, write your Christmas song &mdash; watch your name light up.</p>
   </div>
   <div class="teams" id="teams"><div class="spinner"></div></div>
 </div>
@@ -49,19 +49,21 @@
   const lit = new Set(); let first = true; let sig = '';
   const norm = (s) => String(s || '').trim().toLowerCase();
   async function load() {
-    let S; try { S = await api('/api/admin/state'); } catch (e) { if (e.status === 401) location.href = '/admin'; return; }
-    const s = JSON.stringify([S.tables.map((t) => [t.id, t.number, t.name, t.locked]), S.participants, S.contributions.map((c) => [c.participant_id, c.table_id, c.name])]);
+    let S, V; try { [S, V] = await Promise.all([api('/api/admin/state'), api('/api/admin/v4')]); } catch (e) { if (e.status === 401) location.href = '/admin'; return; }
+    const es = V.entries;
+    const s = JSON.stringify([S.tables.map((t) => [t.id, t.number, t.name]), S.participants, es.map((e) => [e.id, e.participantId, e.name]), V.event.open]);
     if (s === sig) return; sig = s;
-    const did = (p) => S.contributions.some((c) => c.participant_id === p.id || (!c.participant_id && c.table_id === p.table_id && norm(c.name) === norm(p.name)));
+    const did = (p) => es.some((e) => e.participantId === p.id || (!e.participantId && norm(e.name) === norm(p.name)));
+    const groups = S.tables.map((t) => ({ title: 'Table ' + t.number + (t.name ? ' · ' + t.name : ''), ms: S.participants.filter((p) => p.table_id === t.id) }))
+      .filter((g) => g.ms.length);
+    const un = S.participants.filter((p) => !p.table_id); if (un.length || !groups.length) groups.push({ title: groups.length ? 'Guests' : 'Everyone', ms: un });
+    const extra = es.filter((e) => !e.participantId && !S.participants.some((p) => norm(p.name) === norm(e.name)));
+    if (extra.length) groups[groups.length - 1].extra = extra;
     const fresh = [];
-    document.getElementById('teams').innerHTML = S.tables.map((t) => {
-      const ms = S.participants.filter((p) => p.table_id === t.id).sort((a, b) => a.name.localeCompare(b.name));
-      const extra = S.contributions.filter((c) => c.table_id === t.id && !c.participant_id && !ms.some((p) => norm(p.name) === norm(c.name)));
-      const names = ms.map((p) => { const on = did(p); const k = 'p' + p.id; if (on && !lit.has(k)) { if (!first) fresh.push(k); lit.add(k); } return `<span class="nm ${on ? 'lit' : ''}" data-k="${k}">${esc(p.name)}</span>`; })
-        .concat(extra.map((c) => { const k = 'c' + c.id; if (!lit.has(k)) { if (!first) fresh.push(k); lit.add(k); } return `<span class="nm lit" data-k="${k}">${esc(c.name)}</span>`; }));
-      return `<section class="tcol"><h2>Team ${t.number}${t.name ? ' · ' + esc(t.name) : ''}</h2>
-        <div class="sub">${t.locked ? '✦ Composing ✦' : ''}</div>
-        <div class="names">${names.join('') || '<span class="empty">Team members will appear here</span>'}</div></section>`;
+    document.getElementById('teams').innerHTML = groups.map((g) => {
+      const names = g.ms.sort((a, b) => a.name.localeCompare(b.name)).map((p) => { const on = did(p); const k = 'p' + p.id; if (on && !lit.has(k)) { if (!first) fresh.push(k); lit.add(k); } return `<span class="nm ${on ? 'lit' : ''}" data-k="${k}">${esc(p.name)}</span>`; })
+        .concat((g.extra || []).map((e) => { const k = 'e' + e.id; if (!lit.has(k)) { if (!first) fresh.push(k); lit.add(k); } return `<span class="nm lit" data-k="${k}">${esc(e.name)}</span>`; }));
+      return `<section class="tcol"><h2>${esc(g.title)}</h2><div class="sub"></div><div class="names">${names.join('') || '<span class="empty">Guest names will appear here</span>'}</div></section>`;
     }).join('');
     fresh.forEach((k) => document.querySelector(`[data-k="${k}"]`)?.classList.add('pop'));
     first = false;

@@ -11,7 +11,7 @@ let impl = null;
 
 // All app tables live in a dedicated schema, so the app can share a database safely.
 const SCHEMA = (process.env.DB_SCHEMA || 'xmas2026').replace(/[^a-z0-9_]/gi, '');
-const qualify = (sql) => sql.replace(/(^|[^.\w'])(event_tables|participants|submissions|contributions)\b/g, `$1${SCHEMA}.$2`);
+const qualify = (sql) => sql.replace(/(^|[^.\w'])(event_tables|participants|submissions|contributions|entries|settings)\b/g, `$1${SCHEMA}.$2`);
 
 const isPg = (v) => typeof v === 'string' && /^postgres(ql)?:\/\//.test(v);
 // Pooled URL for app queries. Accepts DATABASE_URL / POSTGRES_URL, or any prefixed *_URL a
@@ -95,6 +95,26 @@ const MIGRATIONS = [
   `ALTER TABLE event_tables ADD COLUMN IF NOT EXISTS applause_score REAL`,
   `ALTER TABLE event_tables ADD COLUMN IF NOT EXISTS applause_peak REAL`,
   `ALTER TABLE event_tables ADD COLUMN IF NOT EXISTS applause_at TIMESTAMPTZ`,
+  // v4 — individual songs: everyone writes, every entry becomes a song, 3 go to the final
+  `CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)`,
+  `CREATE TABLE IF NOT EXISTS entries (
+     id SERIAL PRIMARY KEY,
+     participant_id INTEGER REFERENCES participants(id) ON DELETE SET NULL,
+     name TEXT NOT NULL,
+     title TEXT NOT NULL DEFAULT '',
+     lyrics TEXT NOT NULL,
+     style TEXT NOT NULL DEFAULT '',
+     edit_token TEXT NOT NULL,
+     status TEXT NOT NULL DEFAULT 'Received',
+     song_title TEXT, song_lyrics TEXT, song_style TEXT, ai_note TEXT,
+     effort_ai REAL, effort_note TEXT,
+     production JSONB,
+     hidden BOOLEAN NOT NULL DEFAULT FALSE,
+     finalist BOOLEAN NOT NULL DEFAULT FALSE,
+     applause_score REAL, applause_peak REAL, applause_at TIMESTAMPTZ,
+     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+   )`,
 ];
 
 // Run migrations over a DIRECT connection (never through PgBouncer).
@@ -119,7 +139,7 @@ async function init() {
     // the app runs single statements only, so no transactions are needed.
     const sql = require('@neondatabase/serverless').neon(url, { fullResults: true });
     impl = { query: async (text, params) => { const r = await sql.query(qualify(text), params || []); return { rows: r.rows }; }, kind: 'neon-http' };
-    const { rows } = await impl.query(`SELECT 1 AS t FROM information_schema.columns WHERE table_schema='${SCHEMA}' AND table_name='event_tables' AND column_name='applause_at'`);
+    const { rows } = await impl.query(`SELECT 1 AS t FROM information_schema.columns WHERE table_schema='${SCHEMA}' AND table_name='entries' AND column_name='applause_at'`);
     if (!rows[0]) await migratePostgres();
   } else if (url) {
     const { Pool } = require('pg');
@@ -129,7 +149,7 @@ async function init() {
     }
     impl = { query: (text, params) => pool.query(qualify(text), params), kind: 'postgres', pool };
     // Normally `npm run build` has migrated already; this is a safety net for a fresh database.
-    const { rows } = await impl.query(`SELECT 1 AS t FROM information_schema.columns WHERE table_schema='${SCHEMA}' AND table_name='event_tables' AND column_name='applause_at'`);
+    const { rows } = await impl.query(`SELECT 1 AS t FROM information_schema.columns WHERE table_schema='${SCHEMA}' AND table_name='entries' AND column_name='applause_at'`);
     if (!rows[0]) await migratePostgres();
   } else {
     if (process.env.VERCEL) {

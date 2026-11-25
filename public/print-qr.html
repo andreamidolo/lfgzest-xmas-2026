@@ -33,22 +33,22 @@
 </head>
 <body>
 <div class="bar">
-  <div><p class="eyebrow">Organizer</p><h1 style="font-size:26px;color:var(--champagne)">Table QR codes</h1><p class="tiny">Print, or choose “Save as PDF” in the print dialog. 4 cards per A4 page.</p></div>
+  <div><p class="eyebrow">Organizer</p><h1 style="font-size:26px;color:var(--champagne)">Song QR poster</h1><p class="tiny">Print, or choose “Save as PDF” in the print dialog. 4 identical cards per A4 page — put one on each table.</p></div>
   <div style="display:flex;gap:8px"><a class="btn btn-sm" href="/admin#qr">← Dashboard</a><button class="btn btn-gold" onclick="window.print()">Print / Save PDF</button></div>
 </div>
 <div id="warn" class="wrap hidden" style="padding-top:0"><div class="msg info" id="warnMsg"></div></div>
-<div id="sheet" class="sheet"><div class="spinner"></div></div>
+<div id="sheet" class="sheet one"><div class="spinner"></div></div>
 <script src="/common.js"></script>
 <script>
 (async () => {
   try {
-    const S = await api('/api/admin/state');
-    if (/localhost|127\.0\.0\.1|192\.168\./.test(S.baseUrl)) { document.getElementById('warn').classList.remove('hidden'); document.getElementById('warnMsg').innerHTML = 'These QR codes point to <b>' + esc(S.baseUrl) + '</b>, a development address. Print them from the published app.'; }
-    document.getElementById('sheet').innerHTML = S.tables.map((t) => '<div class="pc"><div class="logos"><img src="/brand/lfg-zest-white.png" alt="LFG+Zest"><img src="/brand/lfa-white.png" alt="LFA"></div>' +
-      '<p class="eyebrow">Christmas Dinner 2026</p><h2>Let’s Make a Song!</h2>' +
-      '<div class="q"><img src="/api/admin/qr/' + t.id + '.png?v=' + t.token.slice(0, 6) + '" alt="QR Team ' + t.number + '"></div>' +
-      '<div class="tn">Team ' + t.number + '</div>' + (t.name ? '<div class="nm">' + esc(t.name) + '</div>' : '') +
-      '<div class="cta">Scan &amp; add your idea</div></div>').join('');
+    const V = await api('/api/admin/v4');
+    if (/localhost|127\.0\.0\.1|192\.168\./.test(V.event.url)) { document.getElementById('warn').classList.remove('hidden'); document.getElementById('warnMsg').innerHTML = 'This QR points to <b>' + esc(V.event.url) + '</b>, a development address. Print it from the published app.'; }
+    const card = '<div class="pc"><div class="logos"><img src="/brand/lfg-zest-white.png" alt="LFG+Zest"><img src="/brand/lfa-white.png" alt="LFA"></div>' +
+      '<p class="eyebrow">Christmas Music Battle</p><h2>Write your Christmas song!</h2>' +
+      '<div class="q"><img src="/api/admin/event/qr.png?v=' + V.event.token.slice(0, 6) + '" alt="QR"></div>' +
+      '<div class="cta">Scan, write a few lines &mdash; the AI turns them into your song.<br>The three best go to the final.</div></div>';
+    document.getElementById('sheet').innerHTML = card + card + card + card;
   } catch (e) { if (e.status === 401) location.href = '/admin'; else document.getElementById('sheet').innerHTML = '<p class="msg err">' + esc(e.message) + '</p>'; }
 })();
 </script>

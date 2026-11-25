@@ -133,17 +133,18 @@
   $('test').onclick = () => { testing = !testing; document.body.classList.toggle('testing', testing); $('test').textContent = testing ? 'Stop test' : 'Test';
     $('mLabel').textContent = testing ? 'Microphone test — clap!' : ''; $('count').textContent = ''; $('liveBox').classList.remove('hidden'); };
 
-  async function load() { S = await api('/api/admin/state'); renderScores(); }
-  const sub = (id) => S.submissions.find((s) => s.tableId === id);
+  async function load() { const V = await api('/api/admin/v4'); S = { tables: V.entries.filter((e) => e.finalist).map((e, i) => ({ id: e.id, number: i + 1, title: e.songTitle || e.title || 'Untitled', name: e.name, applause_score: e.applauseScore })) }; renderScores(); }
+  const sub = (id) => { const t = S.tables.find((x) => x.id === id); return t && { title: t.title }; };
   function renderScores(win) {
     if (!S) return;
+    if (!S.tables.length) { $('scores').innerHTML = '<p class="lead" style="grid-column:1/-1">No finalists yet — pick the 3 finalists in the dashboard (Songs → The final).</p>'; return; }
     $('scores').innerHTML = S.tables.map((t) => {
       const sc = t.applause_score; const s = sub(t.id);
       return `<div class="col ${win && win.includes(t.id) ? 'win' : ''}" data-t="${t.id}"><div class="crown">🏆</div>
-        <h2>Team ${t.number}</h2><div class="song">${s ? esc(s.title) : ''}</div>
+        <h2>${esc(t.title)}</h2><div class="song">by ${esc(t.name)}</div>
         <div class="vbar"><i style="height:${win ? sc || 0 : sc != null ? sc : 0}%"></i></div>
         <div class="pts">${sc != null ? Math.round(sc) : '–'} <small>PTS</small></div>
-        <button class="btn btn-sm ${sc != null ? '' : 'btn-gold'}" data-measure="${t.id}" ${analyser ? '' : 'disabled'}>${sc != null ? '↻ Measure again' : '👏 Measure Team ' + t.number}</button></div>`;
+        <button class="btn btn-sm ${sc != null ? '' : 'btn-gold'}" data-measure="${t.id}" ${analyser ? '' : 'disabled'}>${sc != null ? '↻ Measure again' : '👏 Measure #' + t.number}</button></div>`;
     }).join('');
   }
   $('scores').addEventListener('click', (e) => { const b = e.target.closest('[data-measure]'); if (b) measure(+b.dataset.measure); });
@@ -151,9 +152,9 @@
   async function measure(id) {
     if (busy || !analyser) return;
     const t = S.tables.find((x) => x.id === id);
-    if (t.applause_score != null && !confirm(`Team ${t.number} already has ${Math.round(t.applause_score)} pts. Measure again?`)) return;
+    if (t.applause_score != null && !confirm(`${t.title} already has ${Math.round(t.applause_score)} pts. Measure again?`)) return;
     busy = true; testing = false; document.body.classList.remove('testing', 'revealed'); document.body.classList.add('measuring'); $('winner').innerHTML = '';
-    $('mLabel').textContent = `Team ${t.number}` + (sub(id) ? ' — ' + sub(id).title : '');
+    $('mLabel').textContent = `${t.title} — ${t.name}`;
     $('liveBox').classList.add('hidden'); $('barFill').style.width = '0'; $('barAvg').style.left = '0'; $('avgTxt').textContent = '0'; $('timer').style.width = '0';
     for (let n = COUNTDOWN; n > 0; n--) { $('count').textContent = n; await new Promise((r) => setTimeout(r, 1000)); }
     $('count').textContent = '👏'; $('liveBox').classList.remove('hidden');
@@ -170,16 +171,16 @@
     });
     const score = sum / Math.max(frames, 1);
     $('count').textContent = Math.round(score);
-    try { await api(`/api/admin/teams/${id}/applause`, { method: 'PUT', body: { score, peak } }); } catch (e) { toast('Could not save: ' + e.message, true); }
+    try { await api(`/api/admin/entries/${id}/applause`, { method: 'PUT', body: { score, peak } }); } catch (e) { toast('Could not save: ' + e.message, true); }
     await new Promise((r) => setTimeout(r, 2200));
     document.body.classList.remove('measuring'); busy = false; $('count').textContent = '';
-    await load(); toast(`Team ${t.number}: ${Math.round(score)} pts`);
+    await load(); toast(`${t.title}: ${Math.round(score)} pts`);
   }
 
   function reveal() {
     const done = S.tables.filter((t) => t.applause_score != null);
     if (!done.length) return toast('Measure at least one team first', true);
-    if (done.length < S.tables.length && !confirm('Not all teams have been measured. Reveal anyway?')) return;
+    if (done.length < S.tables.length && !confirm('Not all finalists have been measured. Reveal anyway?')) return;
     const best = Math.max(...done.map((t) => t.applause_score));
     const win = done.filter((t) => best - t.applause_score < 0.5).map((t) => t.id);
     // bars grow from zero, then the crown
@@ -187,14 +188,14 @@
     $('winner').innerHTML = ''; requestAnimationFrame(() => setTimeout(() => {
       renderScores([]); setTimeout(() => {
         renderScores(win);
-        const names = win.map((id) => 'Team ' + S.tables.find((t) => t.id === id).number);
-        $('winner').innerHTML = `<h3>${names.length > 1 ? "It's a tie! " + names.join(' & ') : names[0] + ' Wins!'}</h3><p>The loudest applause of the night</p>`;
+        const names = win.map((id) => { const t = S.tables.find((x) => x.id === id); return `“${t.title}” by ${t.name}`; });
+        $('winner').innerHTML = `<h3>${names.length > 1 ? "It's a tie!" : 'And the winner is…'}</h3><h3 style="font-size:clamp(28px,4vw,70px);color:var(--champagne)">${esc(names.join(' & '))}</h3><p>The loudest applause of the night</p>`;
         document.body.classList.add('revealed'); confetti();
       }, 1800);
     }, 50));
   }
   $('reveal').onclick = reveal;
-  $('reset').onclick = async () => { if (!confirm('Reset all applause scores?')) return; await api('/api/admin/applause', { method: 'DELETE' }); $('winner').innerHTML = ''; document.body.classList.remove('revealed'); await load(); };
+  $('reset').onclick = async () => { if (!confirm('Reset all applause scores?')) return; await api('/api/admin/entries-applause', { method: 'DELETE' }); $('winner').innerHTML = ''; document.body.classList.remove('revealed'); await load(); };
   document.addEventListener('keydown', (e) => {
     if (busy || e.target.tagName === 'SELECT') return;
     const n = parseInt(e.key, 10); const t = S && S.tables.find((x) => x.number === n);
