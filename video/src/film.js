@@ -105,6 +105,15 @@
     },
   };
 
+  // LFG+Zest and LFA, same weight, side by side (with gold light sweep layers)
+  function logoPair(sz, sweepKey) {
+    const one = (f, x) => `<div class="abs p3" data-k="lg" style="left:${x}px;top:0;width:${sz}px;height:${sz}px"><img src="${BRAND}${f}" style="width:${sz}px;height:${sz}px;filter:drop-shadow(0 0 30px rgba(213,178,106,.45))">
+      <div class="abs" data-k="${sweepKey}" style="inset:0;-webkit-mask:url(${BRAND}${f}) center/contain no-repeat;background:linear-gradient(105deg,transparent 38%,rgba(255,236,190,1) 50%,transparent 62%);background-size:300% 100%"></div></div>`;
+    const gap = sz * .35, w = sz * 2 + gap;
+    return `<div class="abs p3" style="left:${(700 - w) / 2}px;top:0;width:${w}px;height:${sz}px">${one('lfg-zest-white.png', 0)}
+      <div class="abs" style="left:${sz + gap / 2 - 1}px;top:${sz * .12}px;width:2px;height:${sz * .76}px;background:linear-gradient(transparent,rgba(213,178,106,.8),transparent)"></div>${one('lfa-white.png', sz + gap)}</div>`;
+  }
+
   // QR-like pattern (stylised, not a real code)
   function qrSVG(size, fill) {
     const n = 25, m = size / n, r = rng(42); let s = '';
@@ -205,9 +214,8 @@
   scene({
     pose: lay(0, {}), frame: false,
     html: `<div class="abs" data-k="halo" style="left:660px;top:60px;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(235,203,134,.45),rgba(213,178,106,.12) 45%,transparent 70%)"></div>
-      <div class="abs p3" data-k="logo" style="left:820px;top:200px;width:280px;height:280px">
-        <img src="${BRAND}lfg-zest-white.png" style="width:280px;height:280px;filter:drop-shadow(0 0 30px rgba(213,178,106,.45))">
-        <div class="abs" data-k="sweep" style="inset:0;-webkit-mask:url(${BRAND}lfg-zest-white.png) center/contain no-repeat;background:linear-gradient(105deg,transparent 38%,rgba(255,236,190,1) 50%,transparent 62%);background-size:300% 100%"></div></div>
+      <div class="abs p3" data-k="logo" style="left:610px;top:190px;width:700px;height:300px">
+        ${logoPair(260, 'sweep')}</div>
       <div class="abs eyebrow center-x" data-k="eb" style="top:110px">Cena di Natale · 2026</div>
       <div class="abs disp center-x" data-k="t1" style="top:540px;font-size:58px">Signore e signori,</div>
       <div class="abs disp center-x glow p3" data-k="t2" style="top:615px;font:italic 500 170px/1.05 var(--serif);color:var(--gold)">${letters('Benvenuti!')}</div>
@@ -215,7 +223,7 @@
     update(r, t) {
       const z = lerp(-2600, 0, ep(t, .2, 2.3));
       st($(r, 'logo'), cl(pr(t, .2, 1.2)), `translateZ(${z}px) rotateY(${lerp(38, 0, ep(t, .2, 2.4))}deg)`);
-      $(r, 'sweep').style.backgroundPosition = `${lerp(130, -30, ep(t, 2.0, 3.1))}% 0`;
+      $$(r, 'sweep').forEach((sw, i) => { sw.style.backgroundPosition = `${lerp(130, -30, ep(t, 2.0 + i * .25, 3.1 + i * .25))}% 0`; });
       st($(r, 'halo'), cl(pr(t, 1.2, 2.4)) * (.75 + .25 * Math.sin(t * 2.2)), `scale(${lerp(.4, 1, eo(t, 1.2, 3))})`);
       st($(r, 'eb'), eo(t, 1.3, 2.3), `translateY(${(1 - eo(t, 1.3, 2.3)) * 16}px)`); $(r, 'eb').style.letterSpacing = `${lerp(.7, .34, eo(t, 1.3, 2.6))}em`;
       st($(r, 't1'), eo(t, 1.5, 2.3), `translateY(${(1 - eo(t, 1.5, 2.3)) * 20}px)`);
@@ -287,20 +295,20 @@
   });
 
   // 3 · Ampolla e bigliettino → tavoli
-  const TABLES = []; for (let row = 0; row < 2; row++) for (let i = 0; i < 5; i++) TABLES.push([520 + i * 235, 210 + row * 300]);
+  const TABLES = [[640, 380, 165, 18], [1060, 380, 100, 9], [1405, 380, 122, 12]]; // x, y, radius, seats
   const JAR = [175, 600], JW = 270, JH = JW * 330 / 260;
   const JTOP = [JAR[0], JAR[1] - .469 * JH * .9, .883 * JH * .9];
-  const TK_A = 6, TK_CEO = 2;
+  const TK_A = 1, TK_CEO = 0;
   scene({
     pose: lay(3, { y: -200, z: -400, ry: -10, rx: 3 }), frame: true,
     html: `<div class="abs eyebrow" data-k="eb" style="left:200px;top:130px">Sorpresa n. 1</div>
       <div class="abs disp" data-k="t1" style="left:200px;top:175px;font-size:84px">L’ampolla <em>della sorte</em></div>
       <div class="abs disp" data-k="t2" style="left:200px;top:175px;font-size:84px">Anche i <em>CEO</em>, per una sera</div>
       <div class="abs p3" data-k="floor" style="left:160px;top:330px;width:1600px;height:760px;transform:rotateX(60deg);transform-origin:50% 40%">
-        ${TABLES.map(([x, y], i) => `<div class="abs p3" data-k="tbl" style="left:${x - 85}px;top:${y - 85}px;width:170px;height:170px"><div class="abs table" data-k="tb" style="inset:0">${i + 1}</div>
-           ${[...Array(8)].map((_, j) => { const a = j / 8 * Math.PI * 2; return `<div class="abs chair" data-k="chair" style="left:${85 + Math.cos(a) * 118 - 17}px;top:${85 + Math.sin(a) * 118 - 17}px"></div>`; }).join('')}</div>`).join('')}
+        ${TABLES.map(([x, y, rad, n], i) => `<div class="abs p3" data-k="tbl" style="left:${x - rad}px;top:${y - rad}px;width:${rad * 2}px;height:${rad * 2}px"><div class="abs table" data-k="tb" style="inset:0;flex-direction:column;gap:6px;font-size:${rad > 120 ? 96 : 80}px">${i + 1}<span style="font:800 ${rad > 120 ? 24 : 20}px/1 var(--sans);letter-spacing:.14em;color:var(--gold);font-style:normal">${n} POSTI</span></div>
+           ${[...Array(n)].map((_, j) => { const a = j / n * Math.PI * 2 - Math.PI / 2; return `<div class="abs chair" data-k="chair" style="left:${rad + Math.cos(a) * (rad + 34) - 17}px;top:${rad + Math.sin(a) * (rad + 34) - 17}px"></div>`; }).join('')}</div>`).join('')}
         <div class="abs p3" data-k="jar" style="left:${JAR[0] - JW / 2}px;top:${JAR[1] - JH}px;width:${JW}px;height:${JH}px;transform-origin:50% 100%">${SVG.jar(JW)}</div>
-        <div class="abs ticket" data-k="tkA" style="left:0;top:0">7</div>
+        <div class="abs ticket" data-k="tkA" style="left:0;top:0">2</div>
         <div class="abs ticket gold" data-k="tkC" style="left:0;top:0">CEO</div>
       </div>`,
     update(r, t) {
@@ -308,7 +316,7 @@
       const t1 = win(t, 18.4, 26.9, .7, .4), t2 = eo(t, 27.0, 27.7);
       st($(r, 't1'), t1, `translateY(${(1 - eo(t, 18.4, 19.1)) * 20}px)`);
       st($(r, 't2'), t2, `translateY(${(1 - t2) * 20}px)`);
-      const fl = eo(t, 18.2, 19.6); st($(r, 'floor'), fl, `rotateX(${lerp(75, 60, fl)}deg) translateZ(${(1 - fl) * -300}px)`);
+      const fl = eo(t, 18.2, 19.6); st($(r, 'floor'), fl, `translateZ(${150 - (1 - fl) * 400}px) rotateX(${lerp(75, 60, fl)}deg) scale(.86)`);
       const j = eb(t, 18.3, 19.3);
       $(r, 'jar').style.transform = `translateZ(${(1 - j) * -200}px) rotateX(-60deg) scale(${.9 * j}) rotateZ(${Math.sin(t * 9) * (t > 19.2 && t < 19.8 ? 3 : 0)}deg)`;
       $$(r, 'tbl').forEach((tb, i) => {
@@ -317,17 +325,17 @@
         const tbe = $(tb, 'tb'); tbe.style.boxShadow = lit ? `0 0 ${60 * lit}px ${12 * lit}px rgba(235,203,134,${.75 * lit}), inset 0 0 40px rgba(235,203,134,${.4 * lit})` : 'none';
         tbe.style.borderColor = lit ? GOLD_HI : ''; tbe.style.color = lit ? GOLD_HI : '';
         $$(tb, 'chair').forEach((c, k) => {
-          const ca = eo(t, 22.6 + i * .12 + k * .02, 23.0 + i * .12 + k * .02); c.style.opacity = ca; c.style.transform = `scale(${ca})`;
-          const pr0 = rng(i * 31 + k * 7 + 3)(); const fill = eo(t, 24.7 + pr0 * 2, 25.0 + pr0 * 2) * (pr0 < .78 ? 1 : 0);
+          const ca = eo(t, 22.6 + i * .25 + k * .03, 23.0 + i * .25 + k * .03); c.style.opacity = ca; c.style.transform = `scale(${ca})`;
+          const pr0 = rng(i * 31 + k * 7 + 3)(); const fill = eo(t, 24.7 + pr0 * 2, 25.0 + pr0 * 2);
           const col = pr0 < .3 ? '#55B6E6' : pr0 < .55 ? '#D5B26A' : pr0 < .7 ? '#B4232F' : '#6FC2A8';
           c.style.background = fill ? col : ''; c.style.borderColor = fill ? CHAMP : ''; c.style.boxShadow = fill ? `0 0 14px ${col}` : '';
         });
       });
-      flyTicket($(r, 'tkA'), t, 19.4, 20.55, 22.15, TABLES[TK_A], 0);
-      flyTicket($(r, 'tkC'), t, 28.0, 28.9, 30.0, TABLES[TK_CEO], 1);
+      flyTicket($(r, 'tkA'), t, 19.4, 20.55, 22.15, [TABLES[TK_A][0], TABLES[TK_A][1] + TABLES[TK_A][2] * .62], 0);
+      flyTicket($(r, 'tkC'), t, 28.0, 28.9, 30.0, [TABLES[TK_CEO][0], TABLES[TK_CEO][1] + TABLES[TK_CEO][2] * .62], 1);
       r.querySelectorAll('[data-k="jt"]').forEach((p, i) => p.setAttribute('opacity', .75 + .2 * Math.sin(t * 3 + i)));
     },
-    bursts: [{ t: 22.2, x: 1050, y: 790, n: 55, sp: 420 }, { t: 30.05, x: 1050, y: 560, n: 80, sp: 520 }],
+    bursts: [{ t: 22.2, x: 1190, y: 640, n: 60, sp: 420 }, { t: 30.05, x: 790, y: 640, n: 90, sp: 520 }],
   });
   function flyTicket(el, t, tUp, tGo, tLand, [tx, ty], seed) {
     if (t < tUp) { el.style.opacity = 0; return; }
@@ -338,7 +346,7 @@
       const p = ep(t, tGo, tLand);
       x = lerp(JTOP[0], tx, p); y = lerp(JTOP[1], ty, p);
       z = lerp(JTOP[2] + 50, 6, p) + Math.sin(p * Math.PI) * 90;
-      stand = lerp(-60, 0, eo(t, tLand - .5, tLand)); spin = p * 540 + (seed ? 20 : -12); sc = lerp(1.2, 1.25, p);
+      stand = lerp(-60, 0, eo(t, tLand - .5, tLand)); spin = p * 720 + (seed ? 8 : -10); sc = lerp(1.2, 1.25, p);
     }
     el.style.transform = `translate3d(${x - 55}px,${y - 33}px,${z}px) rotateX(${stand}deg) rotateZ(${spin}deg) scale(${sc})`;
   }
@@ -375,7 +383,7 @@
       <div class="abs disp" data-k="s2" style="left:205px;top:545px;font-size:56px">c’è un <em>QR code</em></div>
       <div class="abs p3" data-k="tent" style="left:1120px;top:150px;width:560px;height:720px">
         <div class="abs card" style="inset:0;display:flex;flex-direction:column;align-items:center;padding-top:44px">
-          <div class="eyebrow" style="font-size:20px">Tavolo 7</div>
+          <div class="eyebrow" style="font-size:20px">Tavolo 2</div>
           <div class="disp" style="font:italic 500 50px/1.1 var(--serif);margin-top:14px">Scrivi la tua <em>canzone</em></div>
           <div class="abs" style="left:100px;top:210px;width:360px;height:360px;border-radius:16px;background:rgba(5,30,37,.8)">
             <div class="abs" style="left:20px;top:20px;opacity:.22">${qrSVG(320, '#F3E6C8')}</div>
@@ -405,7 +413,7 @@
           <div class="disp" style="font-size:58px">${s}</div></div>`).join('')}
       <div class="abs p3" data-k="phone" style="left:1180px;top:110px;width:420px;height:820px;border-radius:56px;background:#0a1a1f;padding:16px;box-shadow:0 60px 100px -40px rgba(0,0,0,.9),0 0 0 2px rgba(213,178,106,.4)">
         <div style="position:relative;width:100%;height:100%;border-radius:42px;overflow:hidden;background:linear-gradient(180deg,#0C3540,#051E25);padding:34px 26px">
-          <div style="display:flex;justify-content:center"><img src="${BRAND}lfg-zest-white.png" style="width:74px;height:74px"></div>
+          <div style="display:flex;justify-content:center;align-items:center;gap:18px"><img src="${BRAND}lfg-zest-white.png" style="width:70px;height:70px"><span style="width:1px;height:46px;background:rgba(213,178,106,.6)"></span><img src="${BRAND}lfa-white.png" style="width:70px;height:70px"></div>
           <div class="eyebrow" style="font-size:13px;text-align:center;margin-top:12px">Christmas Music Battle</div>
           <div class="disp" style="font:italic 500 40px/1.1 var(--serif);text-align:center;margin-top:10px;color:var(--champagne)">Scrivi la tua <em>canzone!</em></div>
           <div class="flabel">Il tuo nome</div><div class="field" data-k="name" style="display:flex;justify-content:space-between"><span data-k="nv">Scegli…</span><span style="color:var(--gold)">▾</span></div>
@@ -555,7 +563,7 @@
           <div class="abs eyebrow" style="left:70px;top:70px;color:#5A0612">Buono regalo</div>
           <div class="abs" style="left:66px;top:118px;font:italic 600 190px/1 var(--serif);color:#2a1a06"><span style="font:800 70px/1 var(--sans);letter-spacing:.06em;vertical-align:60px;margin-right:16px">CHF</span><span data-k="num">0</span></div>
           <div class="abs" style="left:72px;top:385px;font:700 24px/1.3 var(--sans);color:#4b3410">Per la canzone vincitrice · Christmas Music Battle</div>
-          <img class="abs" src="${BRAND}lfg-zest-white.png" style="right:60px;top:56px;width:120px;height:120px;filter:brightness(.25) sepia(1)">
+          <img class="abs" src="${BRAND}lfg-zest-white.png" style="right:200px;top:56px;width:110px;height:110px;filter:brightness(.25) sepia(1)"><img class="abs" src="${BRAND}lfa-white.png" style="right:66px;top:56px;width:110px;height:110px;filter:brightness(.25) sepia(1)">
           <div class="abs" data-k="shine" style="inset:0;background:linear-gradient(110deg,transparent 35%,rgba(255,255,255,.75) 50%,transparent 65%);background-size:300% 100%"></div></div></div>`,
     update(r, t) {
       st($(r, 'tt'), eo(t, 83.5, 84.2));
@@ -600,7 +608,7 @@
     pose: lay(13, { y: 250, z: -500, ry: 12 }), frame: true,
     html: `<div class="abs disp center-x" data-k="t1" style="top:120px;font:italic 500 100px/1 var(--serif);color:var(--champagne)">Ma prima…</div>
       <div class="abs p3" data-k="jarw" style="left:820px;top:300px;width:280px;height:356px">${SVG.jar(280)}</div>
-      ${[...Array(12)].map((_, i) => `<div class="abs ticket p3" data-k="ot" style="left:905px;top:450px">${i + 1}</div>`).join('')}
+      ${[...Array(12)].map((_, i) => `<div class="abs ticket p3" data-k="ot" style="left:905px;top:450px">${i % 3 + 1}</div>`).join('')}
       <div class="abs disp center-x" data-k="t2" style="top:720px;font:italic 500 96px/1 var(--serif);color:var(--gold)">con chi ci tocca cenare?</div>`,
     update(r, t) {
       st($(r, 't1'), eo(t, 108.5, 109.2), `translateY(${(1 - eo(t, 108.5, 109.2)) * 20}px)`);
@@ -618,13 +626,9 @@
     pose: lay(14, {}), frame: false,
     html: `<div class="abs" data-k="halo" style="left:560px;top:-100px;width:800px;height:800px;border-radius:50%;background:radial-gradient(circle,rgba(235,203,134,.38),rgba(213,178,106,.10) 45%,transparent 70%)"></div>
       <div class="abs p3" data-k="lock" style="left:0;top:0;width:1920px;height:1080px;transform-origin:960px 300px">
-        <div class="abs p3" data-k="lz" style="left:810px;top:110px;width:300px;height:300px">
-          <img src="${BRAND}lfg-zest-white.png" style="width:300px;height:300px;filter:drop-shadow(0 0 34px rgba(213,178,106,.5))">
-          <div class="abs" data-k="sweep" style="inset:0;-webkit-mask:url(${BRAND}lfg-zest-white.png) center/contain no-repeat;background:linear-gradient(105deg,transparent 38%,rgba(255,236,190,1) 50%,transparent 62%);background-size:300% 100%"></div></div>
-        <div class="abs" data-k="rule" style="left:560px;top:455px;width:800px;height:2px;background:linear-gradient(90deg,transparent,#D5B26A,transparent)"></div>
-        <div class="abs p3" data-k="la" style="left:620px;top:500px;width:200px;height:200px"><img src="${BRAND}lfa-white.png" style="width:200px;height:200px"></div>
-        <div class="abs" data-k="sep" style="left:959px;top:530px;width:2px;height:140px;background:rgba(213,194,154,.35)"></div>
-        <div class="abs p3" data-k="lh" style="left:1040px;top:555px;width:320px;height:94px"><img src="${BRAND}lfg-holding-white.png" style="width:320px;height:94px"></div></div>
+        <div class="abs p3" data-k="lz" style="left:610px;top:110px;width:700px;height:300px">${logoPair(290, 'sweep')}</div>
+        <div class="abs" data-k="rule" style="left:560px;top:450px;width:800px;height:2px;background:linear-gradient(90deg,transparent,#D5B26A,transparent)"></div>
+        <div class="abs p3" data-k="lh" style="left:820px;top:485px;width:280px;height:82px"><img src="${BRAND}lfg-holding-white.png" style="width:280px;height:82px"></div></div>
       <div class="abs disp center-x glow p3" data-k="bn" style="top:600px;font:italic 500 190px/1 var(--serif);color:var(--gold)">${letters('Buon Natale!')}</div>
       <div class="abs" data-k="gar" style="left:660px;top:775px">${SVG.garland(600)}</div>
       <div class="abs eyebrow center-x" data-k="info" style="top:1005px;font-size:26px;color:var(--champagne)">27 novembre 2026 · Ristorante Arbostora · Morcote</div>
@@ -632,13 +636,11 @@
     update(r, t) {
       const z = ep(t, 111.9, 114.2);
       st($(r, 'lz'), cl(pr(t, 112, 112.8)), `translateZ(${(1 - z) * -2600}px) rotateY(${(1 - z) * -40}deg)`);
-      $(r, 'sweep').style.backgroundPosition = `${lerp(130, -30, ep(t, 113.9, 115.1))}% 0`;
+      $$(r, 'sweep').forEach((sw, i) => { sw.style.backgroundPosition = `${lerp(130, -30, ep(t, 113.9 + i * .3, 115.1 + i * .3))}% 0`; });
       st($(r, 'halo'), eo(t, 112.5, 114.5) * (.8 + .2 * Math.sin(t * 1.7)));
       const ru = eo(t, 115.2, 116.4); st($(r, 'rule'), ru, `scaleX(${ru})`);
-      const a = eb(t, 116.0, 117.2), h = eb(t, 116.7, 117.9);
-      st($(r, 'la'), cl(a * 1.4), `translateZ(${(1 - a) * -900}px) translateX(${(1 - a) * -200}px) rotateY(${(1 - a) * 50}deg)`);
-      st($(r, 'lh'), cl(h * 1.4), `translateZ(${(1 - h) * -900}px) translateX(${(1 - h) * 200}px) rotateY(${(1 - h) * -50}deg)`);
-      st($(r, 'sep'), eo(t, 117.6, 118.4));
+      const h = eb(t, 116.4, 117.6);
+      st($(r, 'lh'), cl(h * 1.4), `translateZ(${(1 - h) * -900}px) rotateX(${(1 - h) * 60}deg)`);
       // logos lockup rises and shrinks, then "Buon Natale"
       const up = ep(t, 122.6, 124.6);
       $(r, 'lock').style.transform = `translateY(${-up * 70}px) scale(${1 - up * .34})`;

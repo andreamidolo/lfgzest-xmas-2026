@@ -34,18 +34,18 @@ Live mode (backup for the evening): serve the repo root over http (e.g. `npx htt
 ## Storyboard
 | Time | Lyric | Sheet |
 |---|---|---|
-| 0:00–0:04 | Signore e signori, benvenuti! | Camera flies in through gold snow; LFG+Zest logo rises from depth with a light sweep; "Benvenuti!" in gold italic, garland |
+| 0:00–0:04 | Signore e signori, benvenuti! | Camera flies in through gold snow; LFG+Zest and LFA logos side by side rise from depth with a light sweep; "Benvenuti!" in gold italic, garland |
 | 0:04–0:12 | Una sorpresa… grigliata estiva annuale | Calendar "Prossimo incontro · Dicembre": "Dicembre" gets struck out, the page flips to "Estate" with a sun; a grill lights up with flames |
 | 0:12–0:18 | E stasera? Due sorprese! | Two gifts (1 and 2) drop in, lids pop with golden light |
-| 0:18–0:31 | Ampolla e bigliettino… anche i CEO | Glass ampolla, a ticket flies onto table 7 of a 3D floor plan; chairs and people fill the tables; a gold "CEO" ticket lands on table 3 |
+| 0:18–0:31 | Ampolla e bigliettino… anche i CEO | Glass ampolla; a ticket flies onto table 2 of a 3D floor plan with the three real tables (1: 18 seats, 2: 9, 3: 12); the chairs fill with people; a gold "CEO" ticket lands on table 1 |
 | 0:31–0:38 | ¡Bienvenida especial a Naimo y Sandra… Matteo! | Waving red-gold ribbon, three name cards flip in on each name |
-| 0:38–0:41 | E ora tocca a voi: QR code | Table card with a stylised QR that lights up and gets scanned |
-| 0:41–0:50 | Scansionatelo, nome, storia, stile | Phone with the app form: name chosen, story typed, "Serenata" selected, "Invia" |
+| 0:38–0:41 | E ora tocca a voi: QR code | Table card (Tavolo 2) with a stylised QR that lights up and gets scanned |
+| 0:41–0:50 | Scansionatelo, nome, storia, stile | Phone with the app form (LFG+Zest and LFA logos): name chosen, story typed, "Serenata" selected, "Invia" |
 | 0:50–0:57 | Bastano poche parole… l'AI | Words spiral into a golden AI orb that pulses and emits music notes and an equaliser ring |
 | 0:57–1:14 | Chorus | Big karaoke title, rotating record, floating notes; shooting star on "la vostra idea è già lanciata!" |
 | 1:14–1:19 | Ognuno riceverà la propria canzone… tre finaliste | Wall of 24 songs; three come forward with trophies |
 | 1:19–1:23 | Applausometro | Gauge and needle rising to 100, "CLAP!" bursts, confetti |
-| 1:23–1:31 | Buono da cento franchi | Gold voucher "CHF 100" spins in, counts up, shine and confetti |
+| 1:23–1:31 | Buono da cento franchi | Gold voucher "CHF 100" with LFG+Zest and LFA logos spins in, counts up, shine and confetti |
 | 1:31–1:48 | Final chorus | Spiral Christmas tree of lights with star, big karaoke title, fireworks |
 | 1:48–1:52 | Ma prima… con chi ci tocca cenare? | The ampolla returns with tickets orbiting around it |
-| 1:52–2:25 | Instrumental | LFG+Zest logo, then LFA and LFG Holding; "Buon Natale!", "Buona serata a tutti", date and venue; fireworks, fade to black |
+| 1:52–2:25 | Instrumental | LFG+Zest and LFA logos side by side, LFG Holding below; "Buon Natale!", "Buona serata a tutti", date and venue; fireworks, fade to black |
