@@ -205,7 +205,7 @@
   const linesIn = (a, b) => LY.filter((l) => l.w[0][1] >= a && l.w[0][1] < b);
 
   // ---------- scenes ----------
-  const B = [0, 4.45, 12.15, 18.15, 31.05, 37.8, 41.5, 50.35, 57.55, 74.2, 79.75, 83.45, 91.75, 108.35, 112.05, DUR];
+  const B = [0, 4.45, 12.15, 16.5, 31.05, 37.8, 41.5, 50.35, 57.55, 74.2, 79.75, 83.45, 91.75, 108.35, 112.05, DUR];
   const S = [];
   const scene = (o) => { S.push(o); return o; };
   const lay = (i, o) => Object.assign({ x: i * 2600, y: 0, z: 0, rx: 0, ry: 0, rz: 0 }, o);
@@ -294,18 +294,18 @@
     bursts: [{ t: 15.6, x: 620, y: 430, n: 60, sp: 450 }, { t: 15.95, x: 1300, y: 430, n: 60, sp: 450 }],
   });
 
-  // 3 · Ampolla e bigliettino → tavoli
+  // 3 · I nomi → piegati nell'ampolla → la sorte sceglie il tavolo
   const TABLES = [[640, 380, 165, 18], [1060, 380, 100, 9], [1405, 380, 122, 12]]; // x, y, radius, seats
   const JAR = [175, 600], JW = 270, JH = JW * 330 / 260;
   const JTOP = [JAR[0], JAR[1] - .469 * JH * .9, .883 * JH * .9];
   const TK_A = 1;
-  // gold tickets: label, table, up, go, land, landing offset (fraction of radius)
-  const GOLD_TK = [['Siro', 0, 26.9, 27.5, 28.4, .62], ['Enrico', 1, 27.5, 28.1, 29.0, -.58], ['Walter', 2, 28.1, 28.7, 29.6, .62]];
-  // the other names stay shuffled above the ampolla, ready to be drawn
-  const MIX_TK = ['Michele', 'Paolo', 'Emanuele', 'Edoardo', 'Morys', 'Gianluca'];
+  const NAMES9 = ['Siro', 'Enrico', 'Walter', 'Michele', 'Emanuele', 'Morys', 'Gianluca', 'Paolo', 'Edoardo'];
+  const MOUTH = [250, 470]; // ampolla mouth, sheet coords (camera at rest)
+  const shaking = (t) => (t > 20.0 && t < 20.9) || (t > 27.0 && t < 30.6);
   scene({
     pose: lay(3, { y: -200, z: -400, ry: -10, rx: 3 }), frame: true,
     html: `<div class="abs eyebrow" data-k="eb" style="left:200px;top:130px">Sorpresa n. 1</div>
+      <div class="abs disp" data-k="t0" style="left:200px;top:175px;font-size:84px">Tutti i nomi <em>in gioco</em></div>
       <div class="abs disp" data-k="t1" style="left:200px;top:175px;font-size:84px">L’ampolla <em>della sorte</em></div>
       <div class="abs disp" data-k="t2" style="left:200px;top:175px;font-size:78px">Anche i <em>CEO</em>, gli <em>azionisti</em> e il <em>CdA</em></div>
       <div class="abs eyebrow" data-k="t2s" style="left:205px;top:285px;color:var(--champagne)">Per una sera, il tavolo lo sceglie la sorte</div>
@@ -314,20 +314,44 @@
            ${[...Array(n)].map((_, j) => { const a = j / n * Math.PI * 2 - Math.PI / 2; return `<div class="abs chair" data-k="chair" style="left:${rad + Math.cos(a) * (rad + 34) - 17}px;top:${rad + Math.sin(a) * (rad + 34) - 17}px"></div>`; }).join('')}</div>`).join('')}
         <div class="abs p3" data-k="jar" style="left:${JAR[0] - JW / 2}px;top:${JAR[1] - JH}px;width:${JW}px;height:${JH}px;transform-origin:50% 100%">${SVG.jar(JW)}</div>
         <div class="abs ticket" data-k="tkA" style="left:0;top:0">2</div>
-        ${GOLD_TK.map(([l]) => `<div class="abs ticket gold" data-k="tkG" style="left:0;top:0;width:auto;min-width:120px;padding:0 18px;font:italic 600 34px/62px var(--serif);letter-spacing:0;color:#5A0612">${l}</div>`).join('')}
-        ${MIX_TK.map((l) => `<div class="abs ticket" data-k="tkM" style="left:0;top:0;width:auto;min-width:120px;padding:0 18px;font:italic 600 32px/62px var(--serif)">${l}</div>`).join('')}
-      </div>`,
+        ${[...Array(6)].map(() => `<div class="abs ticket" data-k="tkM" style="left:0;top:0">?</div>`).join('')}
+      </div>
+      ${NAMES9.map((n) => `<div class="abs p3" data-k="nm" style="left:0;top:0;width:300px;height:110px">
+          <div class="abs" data-k="nmc" style="inset:0;border-radius:10px;background:linear-gradient(160deg,#FBF4E2,#E9D9B4);border:3px dashed rgba(176,133,47,.8);box-shadow:0 18px 36px -12px rgba(0,0,0,.7);transform-origin:50% 0"></div>
+          <div class="abs" data-k="nmt" style="left:0;width:300px;top:0;text-align:center;font:italic 600 58px/110px var(--serif);color:#8A6230">${n}</div></div>`).join('')}`,
     update(r, t) {
-      st($(r, 'eb'), eo(t, 18.3, 19));
-      const t1 = win(t, 18.4, 26.9, .7, .4), t2 = eo(t, 27.0, 27.7);
-      st($(r, 't1'), t1, `translateY(${(1 - eo(t, 18.4, 19.1)) * 20}px)`);
+      st($(r, 'eb'), eo(t, 16.5, 17.2));
+      st($(r, 't0'), win(t, 16.6, 18.55, .6, .3), `translateY(${(1 - eo(t, 16.6, 17.3)) * 20}px)`);
+      const t1 = win(t, 18.55, 26.9, .5, .4), t2 = eo(t, 27.0, 27.7);
+      st($(r, 't1'), t1, `translateY(${(1 - eo(t, 18.55, 19.1)) * 20}px)`);
       st($(r, 't2'), t2, `translateY(${(1 - t2) * 20}px)`); st($(r, 't2s'), eo(t, 27.8, 28.5));
+      // the nine names: readable, then folded and dropped into the ampolla
+      $$(r, 'nm').forEach((el, k) => {
+        const col = k % 3, row = Math.floor(k / 3);
+        const gx = 420 + col * 380, gy = 340 + row * 160;
+        const a = eb(t, 16.6 + k * .09, 17.3 + k * .09);
+        const tf = 18.7 + k * .11, fold = ep(t, tf, tf + .35), q = ep(t, tf + .35, tf + 1.0);
+        const x = lerp(gx, MOUTH[0] - 150, q), y = lerp(gy, MOUTH[1] - 55, q) - Math.sin(q * Math.PI) * 160;
+        const o = cl(a * 1.4) * (1 - pr(t, tf + .82, tf + 1.0));
+        vis(el, o);
+        if (o <= 0) return;
+        el.style.transform = `translate3d(${x}px,${y + Math.sin(t * 1.5 + k) * 5 * (1 - fold)}px,${(1 - a) * -500 + q * 150}px) rotateY(${(1 - a) * 80}deg) rotateZ(${(k % 2 ? 3 : -3) * (1 - q) + q * 300}deg) scale(${lerp(1, .22, q)})`;
+        $(el, 'nmc').style.transform = `scaleY(${1 - .5 * fold}) rotateX(${fold * 55}deg)`;
+        $(el, 'nmt').style.opacity = 1 - cl(fold * 1.6);
+      });
       const fl = eo(t, 18.2, 19.6); st($(r, 'floor'), fl, `translateZ(${150 - (1 - fl) * 400}px) rotateX(${lerp(75, 60, fl)}deg) scale(.86)`);
-      const j = eb(t, 18.3, 19.3);
-      $(r, 'jar').style.transform = `translateZ(${(1 - j) * -200}px) rotateX(-60deg) scale(${.9 * j}) rotateZ(${Math.sin(t * 9) * (t > 19.2 && t < 19.8 ? 3 : 0)}deg)`;
+      const j = eb(t, 18.5, 19.25), sh = shaking(t) ? 1 : 0;
+      $(r, 'jar').style.transform = `translateZ(${(1 - j) * -200}px) rotateX(-60deg) scale(${.9 * j}) rotateZ(${Math.sin(t * 15) * 4 * sh}deg) translateY(${-Math.abs(Math.sin(t * 15)) * 8 * sh}px)`;
+      $(r, 'jar').style.filter = `drop-shadow(0 0 ${20 + 30 * eo(t, 19.6, 20.6)}px rgba(235,203,134,${.25 + .35 * sh}))`;
+      r.querySelectorAll('[data-k="jt"]').forEach((p, i) => {
+        const x = 70 + (i * 37) % 120, y = 220 + (i * 23) % 90;
+        const spin = sh ? t * (200 + i * 15) : i * 40, dx = sh ? Math.sin(t * 9 + i) * 26 : 0, dy = sh ? Math.cos(t * 11 + i * 2) * 22 : 0;
+        p.setAttribute('transform', `translate(${dx} ${dy}) rotate(${spin} ${x} ${y})`);
+        p.setAttribute('opacity', (.85 * eo(t, 19.0, 20.4)).toFixed(3));
+      });
       $$(r, 'tbl').forEach((tb, i) => {
-        const a = eb(t, 18.7 + i * .09, 19.5 + i * .09); tb.style.opacity = cl(a * 1.3); tb.style.transform = `translateZ(${(1 - a) * 160}px) scale(${.6 + .4 * a})`;
-        const lit = (i === TK_A ? eo(t, 22.15, 22.6) : 0) + GOLD_TK.reduce((m, g) => m + (g[1] === i ? eo(t, g[4], g[4] + .4) : 0), 0);
+        const a = eb(t, 20.3 + i * .14, 21.1 + i * .14); tb.style.opacity = cl(a * 1.3); tb.style.transform = `translateZ(${(1 - a) * 160}px) scale(${.6 + .4 * a})`;
+        const lit = i === TK_A ? eo(t, 22.3, 22.7) : 0;
         const tbe = $(tb, 'tb'); tbe.style.boxShadow = lit ? `0 0 ${60 * lit}px ${12 * lit}px rgba(235,203,134,${.75 * lit}), inset 0 0 40px rgba(235,203,134,${.4 * lit})` : 'none';
         tbe.style.borderColor = lit ? GOLD_HI : ''; tbe.style.color = lit ? GOLD_HI : '';
         $$(tb, 'chair').forEach((c, k) => {
@@ -337,21 +361,19 @@
           c.style.background = fill ? col : ''; c.style.borderColor = fill ? CHAMP : ''; c.style.boxShadow = fill ? `0 0 14px ${col}` : '';
         });
       });
-      flyTicket($(r, 'tkA'), t, 19.4, 20.55, 22.15, [TABLES[TK_A][0], TABLES[TK_A][1] + TABLES[TK_A][2] * .62], 0);
+      flyTicket($(r, 'tkA'), t, 20.8, 21.25, 22.3, [TABLES[TK_A][0], TABLES[TK_A][1] + TABLES[TK_A][2] * .62], 0);
+      // folded tickets jumping out of the shaken ampolla, ready to be drawn
       $$(r, 'tkM').forEach((el, k) => {
-        const a0 = eo(t, 28.6 + k * .12, 29.3 + k * .12);
+        const a0 = eo(t, 27.3 + k * .14, 27.9 + k * .14) * (1 - eo(t, 30.4, 30.9));
         if (a0 <= 0) { el.style.opacity = 0; return; }
-        const ang = k / MIX_TK.length * Math.PI * 2 + t * 2.1 + Math.sin(t * 1.3 + k) * .3;
-        const rad = 190 * a0, x = JTOP[0] + 30 + Math.cos(ang) * rad, y = JTOP[1] + Math.sin(ang) * rad * .35;
-        const z = JTOP[2] - 230 + a0 * 50 + Math.sin(t * 3.1 + k * 1.7) * 18 + Math.sin(ang) * 20;
+        const ang = k / 6 * Math.PI * 2 + t * 2.4 + Math.sin(t * 1.3 + k) * .3;
+        const rad = 170 * a0, x = JTOP[0] + 30 + Math.cos(ang) * rad, y = JTOP[1] + Math.sin(ang) * rad * .35;
+        const z = JTOP[2] - 230 + a0 * 50 + Math.abs(Math.sin(t * 5 + k * 1.7)) * 40 + Math.sin(ang) * 20;
         el.style.opacity = cl(a0 * 1.3);
-        el.style.transform = `translate3d(${x - 60}px,${y - 33}px,${z}px) rotateX(-60deg) rotateZ(${Math.sin(t * 4 + k * 2) * 16}deg) scale(${.75 + .15 * (Math.sin(ang) + 1) / 2})`;
-        el.style.zIndex = Math.round(10 + Math.sin(ang) * 5);
+        el.style.transform = `translate3d(${x - 55}px,${y - 33}px,${z}px) rotateX(-60deg) rotateZ(${t * 120 + k * 60}deg) scale(.85)`;
       });
-      $$(r, 'tkG').forEach((el, k) => { const [, ti, tu, tg, tl, off] = GOLD_TK[k], T = TABLES[ti]; flyTicket(el, t, tu, tg, tl, [T[0], T[1] + T[2] * off], k + 1); });
-      r.querySelectorAll('[data-k="jt"]').forEach((p, i) => p.setAttribute('opacity', .75 + .2 * Math.sin(t * 3 + i)));
     },
-    bursts: [{ t: 22.2, x: 1190, y: 640, n: 60, sp: 420 }, { t: 28.45, x: 790, y: 650, n: 60, sp: 460 }, { t: 29.05, x: 1190, y: 560, n: 60, sp: 460 }, { t: 29.65, x: 1480, y: 650, n: 60, sp: 460 }],
+    bursts: [{ t: 19.4, x: 260, y: 470, n: 50, sp: 360 }, { t: 22.35, x: 1190, y: 640, n: 60, sp: 420 }],
   });
   function flyTicket(el, t, tUp, tGo, tLand, [tx, ty], seed) {
     if (t < tUp) { el.style.opacity = 0; return; }

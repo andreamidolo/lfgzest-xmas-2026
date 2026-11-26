@@ -37,7 +37,7 @@ Live mode (backup for the evening): serve the repo root over http (e.g. `npx htt
 | 0:00–0:04 | Signore e signori, benvenuti! | Camera flies in through gold snow; LFG+Zest and LFA logos side by side rise from depth with a light sweep; "Benvenuti!" in gold italic, garland |
 | 0:04–0:12 | Una sorpresa… grigliata estiva annuale | Calendar "Prossimo incontro · Dicembre": "Dicembre" gets struck out, the page flips to "Estate" with a sun; a grill lights up with flames |
 | 0:12–0:18 | E stasera? Due sorprese! | Two gifts (1 and 2) drop in, lids pop with golden light |
-| 0:18–0:31 | Ampolla e bigliettino… anche i CEO | Glass ampolla; a ticket flies onto table 2 of a 3D floor plan with the three real tables (1: 18 seats, 2: 9, 3: 12); the chairs fill with people; a gold "CEO" ticket lands on table 1 |
+| 0:16–0:31 | Ampolla e bigliettino… anche i CEO | The nine names (Siro, Enrico, Walter, Michele, Emanuele, Morys, Gianluca, Paolo, Edoardo) shown on tickets; on "ampolla" the jar appears, the tickets fold and drop in, the jar is shaken; a ticket is drawn onto table 2 of the floor plan with the three real tables (18, 9, 12 seats); the chairs fill; on "anche i CEO" the jar is shaken again with folded tickets ready to be drawn |
 | 0:31–0:38 | ¡Bienvenida especial a Naimo y Sandra… Matteo! | Waving red-gold ribbon, three name cards flip in on each name |
 | 0:38–0:41 | E ora tocca a voi: QR code | Table card (Tavolo 2) with a stylised QR that lights up and gets scanned |
 | 0:41–0:50 | Scansionatelo, nome, storia, stile | Phone with the app form (LFG+Zest and LFA logos): name chosen, story typed, "Serenata" selected, "Invia" |
