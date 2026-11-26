@@ -300,12 +300,12 @@
   const JTOP = [JAR[0], JAR[1] - .469 * JH * .9, .883 * JH * .9];
   const TK_A = 1;
   // gold tickets: label, table, up, go, land, landing offset (fraction of radius)
-  const GOLD_TK = [['CEO', 0, 27.2, 27.8, 28.75, .62], ['Azionisti', 2, 27.9, 28.5, 29.45, .62], ['CdA', 1, 28.6, 29.2, 30.15, -.58]];
+  const GOLD_TK = [['CEO', 0, 26.9, 27.5, 28.4, .62], ['CEO', 2, 27.5, 28.1, 29.0, .62], ['Azionisti', 1, 28.1, 28.7, 29.6, -.58], ['CdA', 0, 28.7, 29.3, 30.2, -.6]];
   scene({
     pose: lay(3, { y: -200, z: -400, ry: -10, rx: 3 }), frame: true,
     html: `<div class="abs eyebrow" data-k="eb" style="left:200px;top:130px">Sorpresa n. 1</div>
       <div class="abs disp" data-k="t1" style="left:200px;top:175px;font-size:84px">L’ampolla <em>della sorte</em></div>
-      <div class="abs disp" data-k="t2" style="left:200px;top:175px;font-size:84px">Anche <em>CEO, azionisti e CdA</em></div>
+      <div class="abs disp" data-k="t2" style="left:200px;top:175px;font-size:78px">Anche i <em>CEO</em>, gli <em>azionisti</em> e il <em>CdA</em></div>
       <div class="abs eyebrow" data-k="t2s" style="left:205px;top:285px;color:var(--champagne)">Per una sera, il tavolo lo sceglie la sorte</div>
       <div class="abs p3" data-k="floor" style="left:160px;top:330px;width:1600px;height:760px;transform:rotateX(60deg);transform-origin:50% 40%">
         ${TABLES.map(([x, y, rad, n], i) => `<div class="abs p3" data-k="tbl" style="left:${x - rad}px;top:${y - rad}px;width:${rad * 2}px;height:${rad * 2}px"><div class="abs table" data-k="tb" style="inset:0;flex-direction:column;gap:6px;font-size:${rad > 120 ? 96 : 80}px">${i + 1}<span style="font:800 ${rad > 120 ? 24 : 20}px/1 var(--sans);letter-spacing:.14em;color:var(--gold);font-style:normal">${n} POSTI</span></div>
@@ -338,7 +338,7 @@
       $$(r, 'tkG').forEach((el, k) => { const [, ti, tu, tg, tl, off] = GOLD_TK[k], T = TABLES[ti]; flyTicket(el, t, tu, tg, tl, [T[0], T[1] + T[2] * off], k + 1); });
       r.querySelectorAll('[data-k="jt"]').forEach((p, i) => p.setAttribute('opacity', .75 + .2 * Math.sin(t * 3 + i)));
     },
-    bursts: [{ t: 22.2, x: 1190, y: 640, n: 60, sp: 420 }, { t: 28.8, x: 790, y: 650, n: 70, sp: 480 }, { t: 29.5, x: 1480, y: 650, n: 70, sp: 480 }, { t: 30.2, x: 1190, y: 560, n: 70, sp: 480 }],
+    bursts: [{ t: 22.2, x: 1190, y: 640, n: 60, sp: 420 }, { t: 28.45, x: 790, y: 650, n: 60, sp: 460 }, { t: 29.05, x: 1480, y: 650, n: 60, sp: 460 }, { t: 29.65, x: 1190, y: 560, n: 60, sp: 460 }, { t: 30.25, x: 790, y: 540, n: 70, sp: 480 }],
   });
   function flyTicket(el, t, tUp, tGo, tLand, [tx, ty], seed) {
     if (t < tUp) { el.style.opacity = 0; return; }
