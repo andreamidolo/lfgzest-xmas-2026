@@ -323,9 +323,9 @@
       st($(r, 'eb'), eo(t, 18.3, 19));
       st($(r, 't1'), win(t, 18.4, 26.9, .6, .4), `translateY(${(1 - eo(t, 18.4, 19.1)) * 20}px)`);
       animLetters(r, 't2', t, 26.95, .8, .04);
-      const fl = eo(t, 18.2, 19.6); st($(r, 'floor'), fl, `translateZ(${150 - (1 - fl) * 400}px) rotateX(${lerp(75, 60, fl)}deg) scale(.86)`);
+      const fl = eo(t, 17.9, 18.8), fang = lerp(75, 60, fl); st($(r, 'floor'), fl, `translateZ(${150 - (1 - fl) * 400}px) rotateX(${fang}deg) scale(.86)`);
       const j = eb(t, 18.4, 18.95), sh = shaking(t) ? 1 : 0;
-      $(r, 'jar').style.transform = `translateZ(${(1 - j) * -200}px) rotateX(-60deg) scale(${.9 * j}) rotateZ(${Math.sin(t * 15) * 4 * sh}deg) translateY(${-Math.abs(Math.sin(t * 15)) * 8 * sh}px)`;
+      $(r, 'jar').style.transform = `translateZ(${(1 - j) * -200}px) rotateX(${-fang}deg) scale(${.9 * j}) rotateZ(${Math.sin(t * 15) * 4 * sh}deg) translateY(${-Math.abs(Math.sin(t * 15)) * 8 * sh}px)`;
       r.querySelectorAll('[data-k="jt"]').forEach((p, i) => {
         const x = 70 + (i * 37) % 120, y = 220 + (i * 23) % 90;
         const spin = sh ? t * (200 + i * 15) : i * 40, dx = sh ? Math.sin(t * 9 + i) * 26 : 0, dy = sh ? Math.cos(t * 11 + i * 2) * 22 : 0;
