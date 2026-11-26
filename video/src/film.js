@@ -240,15 +240,15 @@
       <div class="abs p3" data-k="cal" style="left:240px;top:250px;width:470px;height:520px">
         <div class="abs card" data-k="calback" style="inset:0;overflow:hidden">
           <div style="height:110px;background:linear-gradient(90deg,#0E6E80,#2E8296);display:flex;align-items:center;justify-content:center" class="eyebrow"><span style="color:#F3E6C8">Prossimo incontro</span></div>
-          <div class="abs" data-k="sunsm" style="left:115px;top:140px">${SVG.sun(240)}</div>
-          <div class="abs disp center-x" style="left:0;width:470px;top:385px;font:italic 500 92px/1 var(--serif);color:var(--gold)">Estate</div></div>
+          <div class="abs" data-k="sunsm" style="left:140px;top:128px">${SVG.sun(190)}</div>
+          <div class="abs disp center-x" style="left:0;width:470px;top:325px;font:italic 500 92px/1 var(--serif);color:var(--gold)">Estate</div><div class="abs disp center-x" style="left:0;width:470px;top:425px;font:500 64px/1 var(--serif);color:var(--champagne);letter-spacing:.04em">2027</div></div>
         <div class="abs p3" data-k="page" style="inset:0;transform-origin:50% 0;backface-visibility:hidden">
           <div class="abs card" style="inset:0;overflow:hidden;backface-visibility:hidden">
             <div style="height:110px;background:linear-gradient(90deg,#83021A,#B4232F);display:flex;align-items:center;justify-content:center" class="eyebrow"><span style="color:#F3E6C8">Prossimo incontro</span></div>
             <div class="abs disp" style="left:0;width:470px;text-align:center;top:250px;font:italic 500 104px/1 var(--serif)">12 mesi</div>
             <div class="abs" data-k="strike" style="left:50px;top:300px;height:8px;width:370px;background:var(--gold);border-radius:4px;transform-origin:0 50%;box-shadow:0 0 18px rgba(213,178,106,.8)"></div></div></div></div>
       <div class="abs disp glow p3" data-k="tt" style="left:870px;top:170px;font:italic 500 112px/1 var(--serif);color:var(--gold)">${letters('Grigliata estiva')}</div>
-      <div class="abs eyebrow" data-k="ann" style="left:880px;top:315px;color:var(--champagne)">annuale · tutti insieme</div>
+      <div class="abs eyebrow" data-k="ann" style="left:880px;top:315px;color:var(--champagne)">Estate 2027 · tutti insieme</div>
       <div class="abs" data-k="sun" style="left:1250px;top:330px">${SVG.sun(340)}</div>
       <div class="abs p3" data-k="grill" style="left:1010px;top:380px">${SVG.grill(560)}</div>`,
     update(r, t) {
