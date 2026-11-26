@@ -300,7 +300,9 @@
   const JTOP = [JAR[0], JAR[1] - .469 * JH * .9, .883 * JH * .9];
   const TK_A = 1;
   // gold tickets: label, table, up, go, land, landing offset (fraction of radius)
-  const GOLD_TK = [['CEO', 0, 26.9, 27.5, 28.4, .62], ['CEO', 2, 27.5, 28.1, 29.0, .62], ['Azionisti', 1, 28.1, 28.7, 29.6, -.58], ['CdA', 0, 28.7, 29.3, 30.2, -.6]];
+  const GOLD_TK = [['Siro', 0, 26.9, 27.5, 28.4, .62], ['Enrico', 1, 27.5, 28.1, 29.0, -.58], ['Walter', 2, 28.1, 28.7, 29.6, .62]];
+  // the other names stay shuffled above the ampolla, ready to be drawn
+  const MIX_TK = ['Michele', 'Paolo', 'Emanuele', 'Edoardo', 'Morys', 'Gianluca'];
   scene({
     pose: lay(3, { y: -200, z: -400, ry: -10, rx: 3 }), frame: true,
     html: `<div class="abs eyebrow" data-k="eb" style="left:200px;top:130px">Sorpresa n. 1</div>
@@ -312,7 +314,8 @@
            ${[...Array(n)].map((_, j) => { const a = j / n * Math.PI * 2 - Math.PI / 2; return `<div class="abs chair" data-k="chair" style="left:${rad + Math.cos(a) * (rad + 34) - 17}px;top:${rad + Math.sin(a) * (rad + 34) - 17}px"></div>`; }).join('')}</div>`).join('')}
         <div class="abs p3" data-k="jar" style="left:${JAR[0] - JW / 2}px;top:${JAR[1] - JH}px;width:${JW}px;height:${JH}px;transform-origin:50% 100%">${SVG.jar(JW)}</div>
         <div class="abs ticket" data-k="tkA" style="left:0;top:0">2</div>
-        ${GOLD_TK.map(([l]) => `<div class="abs ticket gold" data-k="tkG" style="left:0;top:0;width:auto;min-width:110px;padding:0 16px;font-size:${l.length > 4 ? 22 : 28}px;text-transform:uppercase">${l}</div>`).join('')}
+        ${GOLD_TK.map(([l]) => `<div class="abs ticket gold" data-k="tkG" style="left:0;top:0;width:auto;min-width:120px;padding:0 18px;font:italic 600 34px/62px var(--serif);letter-spacing:0;color:#5A0612">${l}</div>`).join('')}
+        ${MIX_TK.map((l) => `<div class="abs ticket" data-k="tkM" style="left:0;top:0;width:auto;min-width:120px;padding:0 18px;font:italic 600 32px/62px var(--serif)">${l}</div>`).join('')}
       </div>`,
     update(r, t) {
       st($(r, 'eb'), eo(t, 18.3, 19));
@@ -335,10 +338,20 @@
         });
       });
       flyTicket($(r, 'tkA'), t, 19.4, 20.55, 22.15, [TABLES[TK_A][0], TABLES[TK_A][1] + TABLES[TK_A][2] * .62], 0);
+      $$(r, 'tkM').forEach((el, k) => {
+        const a0 = eo(t, 28.6 + k * .12, 29.3 + k * .12);
+        if (a0 <= 0) { el.style.opacity = 0; return; }
+        const ang = k / MIX_TK.length * Math.PI * 2 + t * 2.1 + Math.sin(t * 1.3 + k) * .3;
+        const rad = 190 * a0, x = JTOP[0] + 30 + Math.cos(ang) * rad, y = JTOP[1] + Math.sin(ang) * rad * .35;
+        const z = JTOP[2] - 230 + a0 * 50 + Math.sin(t * 3.1 + k * 1.7) * 18 + Math.sin(ang) * 20;
+        el.style.opacity = cl(a0 * 1.3);
+        el.style.transform = `translate3d(${x - 60}px,${y - 33}px,${z}px) rotateX(-60deg) rotateZ(${Math.sin(t * 4 + k * 2) * 16}deg) scale(${.75 + .15 * (Math.sin(ang) + 1) / 2})`;
+        el.style.zIndex = Math.round(10 + Math.sin(ang) * 5);
+      });
       $$(r, 'tkG').forEach((el, k) => { const [, ti, tu, tg, tl, off] = GOLD_TK[k], T = TABLES[ti]; flyTicket(el, t, tu, tg, tl, [T[0], T[1] + T[2] * off], k + 1); });
       r.querySelectorAll('[data-k="jt"]').forEach((p, i) => p.setAttribute('opacity', .75 + .2 * Math.sin(t * 3 + i)));
     },
-    bursts: [{ t: 22.2, x: 1190, y: 640, n: 60, sp: 420 }, { t: 28.45, x: 790, y: 650, n: 60, sp: 460 }, { t: 29.05, x: 1480, y: 650, n: 60, sp: 460 }, { t: 29.65, x: 1190, y: 560, n: 60, sp: 460 }, { t: 30.25, x: 790, y: 540, n: 70, sp: 480 }],
+    bursts: [{ t: 22.2, x: 1190, y: 640, n: 60, sp: 420 }, { t: 28.45, x: 790, y: 650, n: 60, sp: 460 }, { t: 29.05, x: 1190, y: 560, n: 60, sp: 460 }, { t: 29.65, x: 1480, y: 650, n: 60, sp: 460 }],
   });
   function flyTicket(el, t, tUp, tGo, tLand, [tx, ty], seed) {
     if (t < tUp) { el.style.opacity = 0; return; }
