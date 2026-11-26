@@ -46,7 +46,7 @@
     const p = st.person;
     $('pName').textContent = p.name;
     $('pTable').textContent = p.table ? 'Table ' + p.table.number + (p.table.name ? ' · ' + p.table.name : '') : 'Drawn at dinner';
-    $('pSeat').textContent = p.table ? (p.seat ? 'Seat ' + p.seat : 'Pick your seat') : 'from the glass jar ✦';
+    $('pSeat').textContent = p.table ? 'Pick any free seat' : 'from the glass jar ✦';
     $('pMenu').textContent = p.menu || 'Not on file — ask the organizer';
   }
   const myLink = () => location.origin + '/sing/' + T + (me ? '#p=' + me : '#k=' + ls.get(KEY));

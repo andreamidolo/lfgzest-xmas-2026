@@ -203,26 +203,16 @@
   function tableOptions(sel) {
     return `<option value="">—</option>` + S.tables.map((t) => `<option value="${t.id}" ${t.id === sel ? 'selected' : ''}>Team ${t.number}</option>`).join('');
   }
-  function seatOptions(p) {
-    const t = tableById(p.table_id); if (!t) return '<option value="">—</option>';
-    const taken = new Map(S.participants.filter((x) => x.table_id === t.id && x.seat && x.id !== p.id).map((x) => [x.seat, x.name]));
-    let o = '<option value="">—</option>';
-    const max = Math.max(t.capacity, p.seat || 0);
-    for (let i = 1; i <= max; i++) o += `<option value="${i}" ${p.seat === i ? 'selected' : ''} ${taken.has(i) ? 'disabled' : ''}>${i}${taken.has(i) ? ' ✕' : ''}</option>`;
-    return o;
-  }
   function renderSeating() {
     const un = S.participants.filter((p) => !p.table_id);
     $('unCount').textContent = `(${un.length})`;
     $('unList').innerHTML = un.map((p) => `<div class="u" data-p="${p.id}"><span title="${esc(p.name)}">${esc(p.name)}</span><select data-f="table_id" aria-label="Assign table">${tableOptions(null)}</select></div>`).join('') || '<p class="tiny">Everyone is assigned to a table.</p>';
     $('tableCards').innerHTML = S.tables.map((t) => {
-      const ps = S.participants.filter((p) => p.table_id === t.id).sort((a, b) => (a.seat || 99) - (b.seat || 99) || a.name.localeCompare(b.name));
+      // no seat numbers: guests of each table listed alphabetically, top to bottom
+      const ps = S.participants.filter((p) => p.table_id === t.id).sort((a, b) => a.name.localeCompare(b.name, 'it', { sensitivity: 'base' }));
       const pct = Math.min(100, (ps.length / t.capacity) * 100);
       const cls = ps.length > t.capacity ? 'over' : ps.length === t.capacity ? 'full' : '';
-      const seated = new Map(ps.filter((p) => p.seat).map((p) => [p.seat, p]));
-      let rows = '';
-      for (let i = 1; i <= t.capacity; i++) { const p = seated.get(i); rows += p ? `<li><span class="sn">${i}</span>${esc(p.name)}</li>` : ''; }
-      ps.filter((p) => !p.seat || p.seat > t.capacity).forEach((p) => { rows += `<li><span class="sn">${p.seat || '·'}</span>${esc(p.name)}</li>`; });
+      let rows = ps.map((p) => `<li>${esc(p.name)}</li>`).join('');
       if (!ps.length) rows = '<li class="emptyseat">No guests yet</li>';
       return `<div class="tcard"><h4>${esc(tLabel(t))}<small>${ps.length}/${t.capacity}</small></h4><div class="occ ${cls}"><i style="width:${pct}%"></i></div><ol>${rows}</ol></div>`;
     }).join('');
@@ -233,9 +223,8 @@
     $('guestRows').innerHTML = S.participants.filter((p) => !q || p.name.toLowerCase().includes(q)).map((p) => `<tr data-p="${p.id}">
       <td><input type="text" data-f="name" value="${esc(p.name)}" aria-label="Name"></td>
       <td><select data-f="table_id" aria-label="Table">${tableOptions(p.table_id)}</select></td>
-      <td><select data-f="seat" aria-label="Seat" ${p.table_id ? '' : 'disabled'}>${seatOptions(p)}</select></td>
       <td><input type="text" data-f="menu" value="${esc(p.menu || '')}" placeholder="Menu choice" aria-label="Menu"></td>
-      <td><button class="btn btn-sm btn-ghost btn-danger" data-delp title="Remove guest">✕</button></td></tr>`).join('') || '<tr><td colspan="5" class="tiny">No guests yet — add them on the left.</td></tr>';
+      <td><button class="btn btn-sm btn-ghost btn-danger" data-delp title="Remove guest">✕</button></td></tr>`).join('') || '<tr><td colspan="4" class="tiny">No guests yet — add them on the left.</td></tr>';
   }
   $('guestSearch').addEventListener('input', renderGuestRows);
   $('tab-seating').addEventListener('change', (e) => {
