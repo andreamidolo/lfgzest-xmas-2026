@@ -10,7 +10,8 @@ const { chromium } = require('playwright');
 // Three real tables (seats): 17 + 9 + 12 = 38 guests (39 on the menu list, Giada cancelled).
 const TABLES = [{ n: 1, seats: 17 }, { n: 2, seats: 9 }, { n: 3, seats: 12 }];
 const THEME = 'chiaro'; // 'chiaro' (white paper, light on ink) or 'scuro' (full teal)
-const SONG_URL = 'https://lfgzest-xmas-2026.vercel.app/sing/ot4-xIs7J_bnHwx5sjkR1BQj';
+const SONG_URL = // guest site: pick your name, personal page (table, menu), leave your input
+  'https://lfgzest-xmas-2026.vercel.app/sing/ot4-xIs7J_bnHwx5sjkR1BQj';
 
 const OUT = __dirname;
 const BRAND = path.join(__dirname, '..', 'public', 'brand');
@@ -99,7 +100,7 @@ function ticketBack(t, table, qrSvg) {
   return `<div class="t"><div class="frame"></div>
     <div class="half top"><div class="eyebrow lbl">Il tuo tavolo</div><div class="num">${table}</div><div class="sub">Il posto, poi, lo scegli tu.</div></div>
     <div class="half bot"><div class="qrrow"><div class="qr">${qrSvg}</div>
-      <div><div class="cta">Scrivi la tua canzone di Natale</div><div class="cta2">Inquadra il QR, scegli il tuo nome: alla musica pensa l’AI.</div></div></div></div>
+      <div><div class="cta">Registrati e lascia la tua idea</div><div class="cta2">Inquadra il QR e scegli il tuo nome: la tua pagina con tavolo, menu e canzone.</div></div></div></div>
     <div class="foldline"></div></div>`;
 }
 
@@ -165,7 +166,7 @@ function tentFace(t, n, qrSvg, pos, id) {
   return `<div class="face ${pos}"><div class="frame"></div><div class="frame2"></div>
     <div class="logos">${logo(t, LOGO_ZEST, 'z')}${logo(t, LOGO_LFA, 'a')}</div>
     <div class="row"><div><div class="eyebrow lbl">Tavolo</div><div class="num">${n}</div></div>
-      <div class="qrcol"><div class="qr">${qrSvg}</div><div class="cta">Scrivi la tua canzone!</div><div class="cta2">Inquadra il QR e scegli il tuo nome:<br>alla musica pensa l’AI.</div></div></div>
+      <div class="qrcol"><div class="qr">${qrSvg}</div><div class="cta">Registrati e lascia<br>la tua idea!</div><div class="cta2">Inquadra il QR e scegli il tuo nome:<br>tavolo, menu e la tua canzone.</div></div></div>
     ${garland(id)}<div class="foot">Christmas Dinner 2026 · LFG+Zest</div></div>`;
 }
 function tentsHTML(themeName, qrSvg) {
