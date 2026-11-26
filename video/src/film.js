@@ -245,7 +245,7 @@
         <div class="abs p3" data-k="page" style="inset:0;transform-origin:50% 0;backface-visibility:hidden">
           <div class="abs card" style="inset:0;overflow:hidden;backface-visibility:hidden">
             <div style="height:110px;background:linear-gradient(90deg,#83021A,#B4232F);display:flex;align-items:center;justify-content:center" class="eyebrow"><span style="color:#F3E6C8">Prossimo incontro</span></div>
-            <div class="abs disp" style="left:0;width:470px;text-align:center;top:250px;font:italic 500 96px/1 var(--serif)">Dicembre</div>
+            <div class="abs disp" style="left:0;width:470px;text-align:center;top:250px;font:italic 500 104px/1 var(--serif)">12 mesi</div>
             <div class="abs" data-k="strike" style="left:50px;top:300px;height:8px;width:370px;background:var(--gold);border-radius:4px;transform-origin:0 50%;box-shadow:0 0 18px rgba(213,178,106,.8)"></div></div></div></div>
       <div class="abs disp glow p3" data-k="tt" style="left:870px;top:170px;font:italic 500 112px/1 var(--serif);color:var(--gold)">${letters('Grigliata estiva')}</div>
       <div class="abs eyebrow" data-k="ann" style="left:880px;top:315px;color:var(--champagne)">annuale · tutti insieme</div>
