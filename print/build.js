@@ -1,6 +1,6 @@
 // Printables for the LFG+Zest Christmas Dinner 2026 (27.11.2026, Ristorante Arbostora, Morcote).
 //   node print/build.js   (needs `npm i` for qrcode + the preinstalled Playwright/Chromium)
-// Output in print/: draw tickets (one per guest) and table tent cards, light + dark, PDF + PNG previews.
+// Output: print/stampa-cena-natale-2026.pdf = name tickets for the draw (one per guest) + table tent cards with the guest-site QR.
 const fs = require('fs');
 const path = require('path');
 const QRCode = require('qrcode');
@@ -57,87 +57,57 @@ body { font-family: 'Mulish', sans-serif; color: ${t.ink}; }
 .qr svg { display: block; width: 100%; height: 100%; }
 `;
 
-// ---- draw tickets: 64 x 90 mm unfolded (fold to 64 x 45), 3 x 3 per A4, duplex flip on long edge --
-const TW = 64, TH = 90, COLS = 3, ROWS = 3, GX = (210 - COLS * TW) / 2, GY = (297 - ROWS * TH) / 2;
+// ---- name tickets for the draw: one per guest, 64 x 38 mm, 3 x 7 per A4, single-sided, no QR ----
+// 38 guests from the menu list "Scelte piatti per partecipante" (Giada cancelled).
+const GUESTS = [
+  'Alessandro Brusa Pasquè', 'André Mezzi', 'Andrea Midolo', 'Anna Roggiani', 'Antonio (Tony) Ruberto', 'Barbara Demergazzi',
+  'Cristina Luiselli', 'Edo', 'Elena Perego', 'Emanuele Stauffer', 'Enrico Guagni', 'Gianluca Generali', 'Gianrito Nicodemo',
+  'Gino', 'Gioele Monopoli', 'Kristina Herceg', 'Lorenzo Scorzolini', 'Massimo Borghesi', 'Matteo Sansaro', 'Michele Menaballi',
+  'Michele Scamoni', 'Monica Casillo', 'Morys Cavadini', 'Naimo Schreiber', 'Paolo Panza', 'Pasquale Corvino', 'Patrick Borradori',
+  'Philip Örn', 'Riccardo De Marco', 'Rosy Mantia', 'Sandra Rodrigues', 'Siro Spellini', 'Sophie', 'Tommaso Procopio',
+  'Tony Viggiani', 'Tuomas Ahonen', 'Vanessa Spellini', 'Walter Biland',
+];
+const TW = 64, TH = 38, COLS = 3, ROWS = 7, GX = (210 - COLS * TW) / 2, GY = (297 - ROWS * TH) / 2;
 
 function ticketCSS(t, dark) {
   return `
-.grid { position: absolute; left: ${GX}mm; top: ${GY}mm; width: ${COLS * TW}mm; height: ${ROWS * TH}mm; display: grid; grid-template-columns: repeat(${COLS}, ${TW}mm); grid-template-rows: repeat(${ROWS}, ${TH}mm); }
-${dark ? `.bleed { position: absolute; left: ${GX - 2}mm; top: ${GY - 2}mm; width: ${COLS * TW + 4}mm; height: ${ROWS * TH + 4}mm; background: #082A33; }` : ''}
-.t { position: relative; width: ${TW}mm; height: ${TH}mm; background: ${t.card}; overflow: hidden; }
-.t.empty { background: transparent; }
-.half { position: absolute; left: 0; width: 100%; height: 45mm; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
-.half.top { top: 0; } .half.bot { top: 45mm; }
-.half.flip { transform: rotate(180deg); }
-.frame { position: absolute; inset: 3.2mm; border: .25mm solid ${t.frame}; border-radius: 1.4mm; opacity: ${dark ? '.7' : '.9'}; }
-.frame2 { position: absolute; inset: 4.4mm; border: .15mm solid ${t.frame}; border-radius: 1mm; opacity: .35; }
-.t .logos { display: flex; gap: 2.4mm; align-items: center; justify-content: center; }
-.t .logos .logo { width: 10mm; height: 10mm; }
-.t .title { font-family: 'Playfair Display', serif; font-style: italic; font-weight: 500; font-size: 13.5pt; line-height: 1.05; color: ${t.gold}; margin-top: 2.2mm; }
-.t .year { font-size: 5.6pt; margin-top: 1.2mm; color: ${t.ink2}; letter-spacing: .3em; font-weight: 700; }
-.t .garland { width: 30mm; margin-top: .6mm; }
-.t .verse { font-family: 'Playfair Display', serif; font-style: italic; font-size: 7.6pt; line-height: 1.35; color: ${t.ink2}; margin-top: 2mm; }
-.t .star { width: 5.5mm; height: 5.5mm; }
-.t .lbl { font-size: 5.8pt; }
-.t .num { font-family: 'Playfair Display', serif; font-weight: 500; font-size: 64pt; line-height: .9; color: ${t.gold}; margin-top: 1mm; }
-.t .sub { font-family: 'Playfair Display', serif; font-style: italic; font-size: 7.4pt; color: ${t.ink2}; margin-top: 1.6mm; }
-.t .qrrow { display: flex; align-items: center; gap: 3mm; text-align: left; padding: 0 7mm; }
-.t .qr { width: 21mm; height: 21mm; padding: ${dark ? '1.2mm' : '0'}; flex: none; }
-.t .cta { font-family: 'Playfair Display', serif; font-style: italic; font-size: 9pt; line-height: 1.15; color: ${t.gold}; }
-.t .cta2 { font-size: 5.8pt; line-height: 1.35; color: ${t.ink2}; margin-top: 1.4mm; }
-.foldline { position: absolute; left: 7mm; right: 7mm; top: 45mm; border-top: .2mm dashed ${t.frame}; opacity: .35; }
+.grid { position: absolute; left: ${GX}mm; top: ${GY}mm; width: ${COLS * TW}mm; display: grid; grid-template-columns: repeat(${COLS}, ${TW}mm); grid-auto-rows: ${TH}mm; }
+.t { position: relative; width: ${TW}mm; height: ${TH}mm; background: ${t.card}; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.t .frame { position: absolute; inset: 2.6mm; border: .25mm solid ${t.frame}; border-radius: 1.4mm; opacity: ${dark ? '.7' : '.9'}; }
+.t .frame2 { position: absolute; inset: 3.6mm; border: .15mm solid ${t.frame}; border-radius: 1mm; opacity: .35; }
+.t .top { display: flex; align-items: center; gap: 1.6mm; }
+.t .top .logo { width: 6.2mm; height: 6.2mm; }
+.t .ev { font-size: 5.4pt; letter-spacing: .24em; margin-left: 1mm; }
+.t .name { font-family: 'Playfair Display', serif; font-weight: 600; font-size: 13pt; line-height: 1.1; color: ${t.ink}; margin-top: 2.4mm; padding: 0 6mm; }
+.t .name.long { font-size: 11.5pt; }
+.t .garland { width: 26mm; margin-top: 1.2mm; }
 `;
 }
-
-function ticketFront(t, i) {
+function ticket(t, name, i) {
   return `<div class="t"><div class="frame"></div><div class="frame2"></div>
-    <div class="half top"><div class="logos">${logo(t, LOGO_ZEST, 'z')}${logo(t, LOGO_LFA, 'a')}</div>
-      <div class="title">Christmas Dinner</div><div class="eyebrow year">2026 · Morcote</div>${garland('f' + i)}</div>
-    <div class="half bot flip">${star(t.goldSoft)}<div class="verse">Un’ampolla e un bigliettino,<br>la sorte sceglie il tavolino!</div></div>
-    <div class="foldline"></div></div>`;
+    <div class="top">${logo(t, LOGO_ZEST, 'z')}${logo(t, LOGO_LFA, 'a')}<span class="eyebrow ev">Christmas Dinner 2026</span></div>
+    <div class="name${name.length > 20 ? ' long' : ''}">${name}</div>${garland('n' + i)}</div>`;
 }
-function ticketBack(t, table, qrSvg) {
-  return `<div class="t"><div class="frame"></div>
-    <div class="half top"><div class="eyebrow lbl">Il tuo tavolo</div><div class="num">${table}</div><div class="sub">Il posto, poi, lo scegli tu.</div></div>
-    <div class="half bot"><div class="qrrow"><div class="qr">${qrSvg}</div>
-      <div><div class="cta">Registrati e lascia la tua idea</div><div class="cta2">Inquadra il QR e scegli il tuo nome: la tua pagina con tavolo, menu e canzone.</div></div></div></div>
-    <div class="foldline"></div></div>`;
-}
-
-function cropMarks() {
-  const m = [];
-  const L = 5; // mark length mm
+function cropMarks(rows) {
+  const m = [], L = 5;
   for (let c = 0; c <= COLS; c++) {
     const x = GX + c * TW;
     m.push(`<div class="mark" style="left:${x - .1}mm;top:${GY - 2 - L}mm;width:.2mm;height:${L}mm"></div>`);
-    m.push(`<div class="mark" style="left:${x - .1}mm;top:${GY + ROWS * TH + 2}mm;width:.2mm;height:${L}mm"></div>`);
+    m.push(`<div class="mark" style="left:${x - .1}mm;top:${GY + rows * TH + 2}mm;width:.2mm;height:${L}mm"></div>`);
   }
-  for (let r = 0; r <= ROWS; r++) {
+  for (let r = 0; r <= rows; r++) {
     const y = GY + r * TH;
     m.push(`<div class="mark" style="top:${y - .1}mm;left:${GX - 2 - L}mm;height:.2mm;width:${L}mm"></div>`);
     m.push(`<div class="mark" style="top:${y - .1}mm;left:${GX + COLS * TW + 2}mm;height:.2mm;width:${L}mm"></div>`);
-    if (r < ROWS) { // fold ticks (dashed look: two short segments)
-      const f = y + TH / 2;
-      for (const x0 of [GX - 2 - L, GX + COLS * TW + 2]) m.push(`<div class="mark" style="top:${f - .1}mm;left:${x0}mm;height:.2mm;width:1.6mm"></div><div class="mark" style="top:${f - .1}mm;left:${x0 + 3.4}mm;height:.2mm;width:1.6mm"></div>`);
-    }
   }
   return m.join('');
 }
-
-function ticketsHTML(themeName, qrSvg) {
+function ticketsHTML(themeName) {
   const t = THEMES[themeName], dark = themeName === 'scuro';
-  const list = TABLES.flatMap((tb) => Array(tb.seats).fill(tb.n));
   const per = COLS * ROWS, pages = [];
-  for (let s = 0; s < list.length; s += per) {
-    const chunk = list.slice(s, s + per);
-    const cells = Array.from({ length: per }, (_, k) => chunk[k]);
-    const front = cells.map((n, k) => (n ? ticketFront(t, s + k) : '<div class="t empty"></div>')).join('');
-    // back side mirrored left<->right (duplex, flip on long edge)
-    const back = Array.from({ length: per }, (_, k) => { const r = Math.floor(k / COLS), c = COLS - 1 - (k % COLS); return cells[r * COLS + c]; })
-      .map((n) => (n ? ticketBack(t, n, qrSvg) : '<div class="t empty"></div>')).join('');
-    const bleed = (cells2) => (dark ? `<div class="bleed" style="height:${Math.ceil(cells2.filter(Boolean).length / COLS) * TH + 4}mm"></div>` : '');
-    pages.push(`<section class="page">${bleed(cells)}${cropMarks()}<div class="grid">${front}</div></section>`);
-    pages.push(`<section class="page">${bleed(cells)}<div class="grid">${back}</div></section>`);
+  for (let s = 0; s < GUESTS.length; s += per) {
+    const chunk = GUESTS.slice(s, s + per), rows = Math.ceil(chunk.length / COLS);
+    pages.push(`<section class="page">${cropMarks(rows)}<div class="grid">${chunk.map((n, k) => ticket(t, n, s + k)).join('')}</div></section>`);
   }
   return { css: ticketCSS(t, dark), body: pages.join('') };
 }
@@ -171,8 +141,7 @@ function tentFace(t, n, qrSvg, pos, id) {
 }
 function tentsHTML(themeName, qrSvg) {
   const t = THEMES[themeName], dark = themeName === 'scuro';
-  // each tent page is followed by a blank page, so the whole file can go through a duplex print job
-  const pages = TABLES.map((tb) => `<section class="page">${tentFace(t, tb.n, qrSvg, 'top', 'a' + tb.n)}${tentFace(t, tb.n, qrSvg, 'bot', 'b' + tb.n)}<div class="fold" style="left:0"></div><div class="fold" style="right:0"></div></section><section class="page"></section>`);
+  const pages = TABLES.map((tb) => `<section class="page">${tentFace(t, tb.n, qrSvg, 'top', 'a' + tb.n)}${tentFace(t, tb.n, qrSvg, 'bot', 'b' + tb.n)}<div class="fold" style="left:0"></div><div class="fold" style="right:0"></div></section>`);
   return { css: tentCSS(t, dark), body: pages.join('') };
 }
 
@@ -185,7 +154,7 @@ function doc(theme, css, body) {
 (async () => {
   const qrFor = (dark) => QRCode.toString(SONG_URL, { type: 'svg', margin: 0, errorCorrectionLevel: 'M', color: { dark, light: '#00000000' } });
   const qr = await qrFor(THEMES[THEME].qrDark);
-  const tk = ticketsHTML(THEME, qr), tn = tentsHTML(THEME, qr);
+  const tk = ticketsHTML(THEME), tn = tentsHTML(THEME, qr);
   const html = doc(THEME, CSS(THEMES[THEME]) + tk.css + tn.css, tk.body + tn.body);
   const name = 'stampa-cena-natale-2026';
   const htmlPath = path.join(OUT, 'src', name + '.html');
