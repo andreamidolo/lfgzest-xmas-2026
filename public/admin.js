@@ -234,13 +234,14 @@
       <td><input type="text" data-f="name" value="${esc(p.name)}" aria-label="Name"></td>
       <td><select data-f="table_id" aria-label="Table">${tableOptions(p.table_id)}</select></td>
       <td><select data-f="seat" aria-label="Seat" ${p.table_id ? '' : 'disabled'}>${seatOptions(p)}</select></td>
-      <td><button class="btn btn-sm btn-ghost btn-danger" data-delp title="Remove guest">✕</button></td></tr>`).join('') || '<tr><td colspan="4" class="tiny">No guests yet — add them on the left.</td></tr>';
+      <td><input type="text" data-f="menu" value="${esc(p.menu || '')}" placeholder="Menu choice" aria-label="Menu"></td>
+      <td><button class="btn btn-sm btn-ghost btn-danger" data-delp title="Remove guest">✕</button></td></tr>`).join('') || '<tr><td colspan="5" class="tiny">No guests yet — add them on the left.</td></tr>';
   }
   $('guestSearch').addEventListener('input', renderGuestRows);
   $('tab-seating').addEventListener('change', (e) => {
     const row = e.target.closest('[data-p]'); if (!row || !e.target.dataset.f) return;
     const f = e.target.dataset.f; const v = e.target.value;
-    const body = {}; body[f] = f === 'name' ? v : v ? +v : null;
+    const body = {}; body[f] = (f === 'name' || f === 'menu') ? v : v ? +v : null;
     e.target.blur();
     act(`/api/admin/participants/${row.dataset.p}`, 'PATCH', body, f === 'table_id' ? (v ? `Assigned to Team ${tableById(+v).number}` : 'Unassigned') : 'Saved');
   });
@@ -251,15 +252,17 @@
   });
   $('importBtn').addEventListener('click', async () => {
     const entries = $('importBox').value.split('\n').map((l) => l.trim()).filter(Boolean).map((l) => {
-      const parts = l.split(/[,;\t]/).map((x) => x.trim());
-      return { name: parts[0], table: parts[1] || null, seat: parts[2] || null };
+      // Excel paste (tabs) or "Name, Table, Seat, Menu" — the menu may itself contain commas
+      const parts = (l.includes('\t') ? l.split('\t') : l.split(/[;,]/)).map((x) => x.trim());
+      const menu = parts.length > 3 ? parts.slice(3).join(l.includes('\t') ? ' ' : ', ').trim() : null;
+      return { name: parts[0], table: parts[1] || null, seat: parts[2] || null, menu };
     });
     const m = $('importMsg');
     if (!entries.length) { m.className = 'msg err'; m.textContent = 'Paste at least one name.'; return; }
     try {
       const r = await api('/api/admin/participants', { method: 'POST', body: { entries } });
       m.className = r.warnings.length ? 'msg info' : 'msg ok';
-      m.innerHTML = `${r.added} guest${r.added === 1 ? '' : 's'} added.` + (r.warnings.length ? '<br>' + r.warnings.map(esc).join('<br>') : '');
+      m.innerHTML = `${r.added} guest${r.added === 1 ? '' : 's'} added${r.updated ? `, ${r.updated} updated` : ''}.` + (r.warnings.length ? '<br>' + r.warnings.map(esc).join('<br>') : '');
       $('importBox').value = ''; refresh(true);
     } catch (e) { m.className = 'msg err'; m.textContent = e.message; }
   });

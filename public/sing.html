@@ -25,10 +25,29 @@
   <div id="loading" class="spinner" aria-label="Loading"></div>
   <div id="fatal" class="card hidden" style="text-align:center"><h2 style="color:var(--champagne)" id="fatalTitle">Link not recognised</h2><p class="muted" id="fatalMsg"></p></div>
 
+  <section id="whoView" class="hidden fade-in">
+    <div class="card">
+      <p class="intro"><strong>Who are you?</strong>Tap your name to open your personal page: your song, your table and your menu.</p>
+      <input type="search" id="who" placeholder="Search your name&hellip;" autocomplete="off" style="margin-top:16px">
+      <div class="people" id="people"></div>
+      <button type="button" class="btn btn-ghost" id="notListed" style="width:100%;margin-top:14px">I&rsquo;m not on the list</button>
+    </div>
+  </section>
+
+  <section id="personBar" class="hidden fade-in">
+    <div class="card pbar">
+      <div class="pb-head"><div><p class="eyebrow">Your page</p><h2 id="pName"></h2></div><button type="button" class="btn btn-sm btn-ghost" id="changeMe">Not you?</button></div>
+      <div class="pinfo">
+        <div class="pi"><span class="eyebrow">Your table</span><b id="pTable"></b><small id="pSeat"></small></div>
+        <div class="pi"><span class="eyebrow">Your menu</span><b id="pMenu" class="menu"></b></div>
+      </div>
+    </div>
+  </section>
+
   <section id="formView" class="hidden fade-in">
     <form id="form" class="card" novalidate>
       <div class="tipbox"><b>How to reach the final</b>Write more, write your own style, give it a title &mdash; the songs with the most effort and creativity go to the final.</div>
-      <div class="field">
+      <div class="field" id="nameField">
         <label for="name">Your name</label>
         <input type="text" id="name" maxlength="40" autocomplete="off" placeholder="Start typing your name&hellip;">
         <div class="vibes members" id="nameHits"></div>

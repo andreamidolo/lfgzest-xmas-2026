@@ -165,3 +165,4 @@
 /* tables tab: QR per table no longer used */
 #tab-qr .qimg, #tab-qr .url, #tab-qr [data-dl], #tab-qr [data-copyurl], #tab-qr a[target], #tab-qr [data-lock], #tab-qr [data-regen], #tab-qr #baseWarn, #tab-qr .tb-actions a { display: none !important; }
 @media (max-width: 900px) { .evbar { grid-template-columns: 110px 1fr; } .evstats { grid-column: 1 / -1; } .fslots { grid-template-columns: 1fr; } .ent-det { grid-template-columns: 1fr; } .ent-row { grid-template-columns: 48px 1fr auto; } .ent-acts { grid-column: 1 / -1; justify-content: flex-start; } }
+.guest-table td:nth-child(4) { min-width: 180px; }

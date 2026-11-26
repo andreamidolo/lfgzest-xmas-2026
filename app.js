@@ -196,7 +196,7 @@ function subOut(r) {
 app.get('/api/admin/state', wrap(async (req, res) => {
   const [t, p, s, c] = await Promise.all([
     q('SELECT id, number, name, capacity, token, locked, gen_requested_at, applause_score, applause_peak, applause_at FROM event_tables ORDER BY number'),
-    q('SELECT id, name, table_id, seat FROM participants ORDER BY lower(name)'),
+    q('SELECT id, name, table_id, seat, menu FROM participants ORDER BY lower(name)'),
     q('SELECT * FROM submissions'),
     q('SELECT id, table_id, participant_id, name, idea, vibe, created_at, updated_at FROM contributions ORDER BY created_at'),
   ]);
@@ -253,27 +253,36 @@ async function checkSeat(id, tableId, seat) {
   return rows[0] ? `Seat ${seat} is already taken by ${rows[0].name}.` : null;
 }
 app.post('/api/admin/participants', wrap(async (req, res) => {
-  // Body: { entries: [{name, table?, seat?}] } — table is the TABLE NUMBER
+  // Body: { entries: [{name, table?, seat?, menu?}] } — table is the TABLE NUMBER.
+  // Upsert by name (case-insensitive): an existing guest gets the given table/seat/menu updated.
   const entries = Array.isArray((req.body || {}).entries) ? req.body.entries.slice(0, 500) : [];
   const { rows: tabs } = await q('SELECT id, number FROM event_tables');
   const byNum = new Map(tabs.map((t) => [t.number, t.id]));
-  let added = 0; const warnings = [];
+  let added = 0, updated = 0; const warnings = [];
   for (const e of entries) {
     const name = str(e.name);
     if (!name) continue;
     if (charLen(name) > LIMITS.name) { warnings.push(`Skipped (too long): ${name.slice(0, 30)}…`); continue; }
+    const menu = e.menu != null ? str(e.menu).slice(0, 300) : null;
     let tableId = null; let seat = null;
     const tn = parseInt(e.table, 10);
     if (tn) { tableId = byNum.get(tn) ?? null; if (!tableId) warnings.push(`${name}: table ${tn} does not exist — left unassigned.`); }
+    const { rows: ex } = await q('SELECT * FROM participants WHERE lower(name)=lower($1) LIMIT 1', [name]);
     const sn = parseInt(e.seat, 10);
     if (tableId && sn) {
-      const err = await checkSeat(0, tableId, sn);
+      const err = await checkSeat(ex[0] ? ex[0].id : 0, tableId, sn);
       if (err) warnings.push(`${name}: ${err} Seat left empty.`); else seat = sn;
     }
-    await q('INSERT INTO participants (name, table_id, seat) VALUES ($1,$2,$3)', [name, tableId, seat]);
-    added++;
+    if (ex[0]) {
+      const p = ex[0];
+      await q('UPDATE participants SET table_id=$2, seat=$3, menu=$4 WHERE id=$1', [p.id, tableId ?? p.table_id, tableId ? seat : p.seat, menu ?? p.menu]);
+      updated++;
+    } else {
+      await q('INSERT INTO participants (name, table_id, seat, menu) VALUES ($1,$2,$3,$4)', [name, tableId, seat, menu || '']);
+      added++;
+    }
   }
-  res.json({ ok: true, added, warnings });
+  res.json({ ok: true, added, updated, warnings });
 }));
 app.patch('/api/admin/participants/:id', wrap(async (req, res) => {
   const id = parseInt(req.params.id, 10); const b = req.body || {};
@@ -289,7 +298,8 @@ app.patch('/api/admin/participants/:id', wrap(async (req, res) => {
   if ('table_id' in b && !('seat' in b) && tableId !== cur.table_id) seat = null;
   const err = await checkSeat(id, tableId, seat);
   if (err) return bad(res, err, 409);
-  await q('UPDATE participants SET name=$2, table_id=$3, seat=$4 WHERE id=$1', [id, name, tableId, seat]);
+  const menu = 'menu' in b ? str(b.menu).slice(0, 300) : cur.menu;
+  await q('UPDATE participants SET name=$2, table_id=$3, seat=$4, menu=$5 WHERE id=$1', [id, name, tableId, seat, menu]);
   res.json({ ok: true });
 }));
 app.delete('/api/admin/participants/:id', wrap(async (req, res) => {
@@ -513,6 +523,42 @@ app.put('/api/s/:token/entries/mine', wrap(async (req, res) => {
   res.json({ ok: true });
 }));
 
+// Personal areas: everyone is listed; picking your name opens your area (song, table, menu). Nothing here is confidential.
+app.get('/api/s/:token/people', wrap(async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  if (!(await checkEventToken(req.params.token))) return bad(res, 'This link is not valid. Please scan the QR code again.', 404);
+  const [{ rows: ps }, { rows: es }] = await Promise.all([q('SELECT id, name FROM participants ORDER BY lower(name)'), q('SELECT participant_id, status, hidden FROM entries WHERE participant_id IS NOT NULL')]);
+  const st = new Map(es.map((e) => [e.participant_id, e.status]));
+  res.json({ open: await eventOpen(), people: ps.map((p) => ({ id: p.id, name: p.name, song: st.get(p.id) || null })) });
+}));
+async function personEntry(pid) { const { rows } = await q('SELECT * FROM entries WHERE participant_id=$1 ORDER BY id DESC LIMIT 1', [pid]); return rows[0] || null; }
+app.get('/api/s/:token/p/:pid', wrap(async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  if (!(await checkEventToken(req.params.token))) return bad(res, 'This link is not valid.', 404);
+  const pid = parseInt(req.params.pid, 10);
+  const { rows } = await q('SELECT p.id, p.name, p.seat, p.menu, t.number AS table_number, t.name AS table_name FROM participants p LEFT JOIN event_tables t ON t.id=p.table_id WHERE p.id=$1', [pid]);
+  if (!rows[0]) return bad(res, 'Guest not found.', 404);
+  const p = rows[0]; const e = await personEntry(pid);
+  res.json({ open: await eventOpen(), limits: ELIM,
+    person: { id: p.id, name: p.name, menu: p.menu, seat: p.seat, table: p.table_number ? { number: p.table_number, name: p.table_name } : null },
+    mine: e && { id: e.id, title: e.title, lyrics: e.lyrics, style: e.style, status: e.status, editable: e.status === 'Received' }, song: guestSong(e) });
+}));
+app.post('/api/s/:token/p/:pid/song', wrap(async (req, res) => {
+  if (!(await checkEventToken(req.params.token))) return bad(res, 'This link is not valid.', 404);
+  const pid = parseInt(req.params.pid, 10);
+  const { d, err } = await readEntry({ ...(req.body || {}), participantId: pid }); if (err) return bad(res, err);
+  if (d.participantId !== pid) return bad(res, 'Guest not found.', 404);
+  const e = await personEntry(pid);
+  if (e) {
+    if (e.status !== 'Received') return bad(res, 'This song is already in the studio — it can no longer be changed.', 423);
+    await q('UPDATE entries SET title=$2, lyrics=$3, style=$4, updated_at=now() WHERE id=$1', [e.id, d.title, d.lyrics, d.style]);
+    return res.json({ ok: true });
+  }
+  if (!(await eventOpen())) return bad(res, 'Submissions are closed — the songs are being produced!', 423);
+  await q('INSERT INTO entries (participant_id, name, title, lyrics, style, edit_token) VALUES ($1,$2,$3,$4,$5,$6)', [pid, d.name, d.title, d.lyrics, d.style, newToken()]);
+  res.json({ ok: true });
+}));
+
 // Public karaoke: finalists first, then every other finished song.
 app.get('/api/karaoke', wrap(async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
@@ -523,7 +569,7 @@ app.get('/api/karaoke', wrap(async (req, res) => {
 
 // ---- admin
 app.get('/api/admin/v4', wrap(async (req, res) => {
-  const [{ rows }, { rows: ps }] = await Promise.all([q('SELECT * FROM entries ORDER BY id'), q('SELECT id, name, table_id FROM participants ORDER BY lower(name)')]);
+  const [{ rows }, { rows: ps }] = await Promise.all([q('SELECT * FROM entries ORDER BY id'), q('SELECT id, name, table_id, menu FROM participants ORDER BY lower(name)')]);
   const tok = await eventToken();
   res.json({ event: { open: await eventOpen(), url: `${baseUrl(req)}/sing/${tok}`, token: tok }, entries: rows.map(entryOut), participants: ps, limits: ELIM, graceMin: GRACE_MIN });
 }));

@@ -94,7 +94,7 @@
       <div class="seat-grid">
         <div class="card import">
           <p class="eyebrow">Add guests</p>
-          <p class="tiny" style="margin:6px 0 10px">One guest per line. Optionally add table and seat: <code>Name, Table, Seat</code></p>
+          <p class="tiny" style="margin:6px 0 10px">One guest per line. Paste from Excel (Name · Table · Seat · Menu) or type <code>Name, Table, Seat, Menu</code>. Existing names are updated.</p>
           <textarea id="importBox" rows="7" placeholder="Maria Rossi&#10;John Smith, 3&#10;Anna Keller, 2, 5"></textarea>
           <button id="importBtn" class="btn btn-gold" style="width:100%;margin-top:10px">Add guests</button>
           <div id="importMsg" class="msg hidden"></div>
@@ -107,7 +107,7 @@
           <div id="tableCards" class="table-cards"></div>
           <div class="card" style="margin-top:16px">
             <div class="toolbar" style="margin:0 0 10px"><p class="eyebrow">All guests</p><input type="text" id="guestSearch" placeholder="Search guest…" style="max-width:240px;padding:8px 12px"></div>
-            <div class="guest-table-wrap"><table class="guest-table"><thead><tr><th>Guest</th><th>Table</th><th>Seat</th><th></th></tr></thead><tbody id="guestRows"></tbody></table></div>
+            <div class="guest-table-wrap"><table class="guest-table"><thead><tr><th>Guest</th><th>Table</th><th>Seat</th><th>Menu</th><th></th></tr></thead><tbody id="guestRows"></tbody></table></div>
           </div>
         </div>
       </div>
