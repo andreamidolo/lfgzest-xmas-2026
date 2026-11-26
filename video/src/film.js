@@ -298,30 +298,33 @@
   const TABLES = [[640, 380, 165, 18], [1060, 380, 100, 9], [1405, 380, 122, 12]]; // x, y, radius, seats
   const JAR = [175, 600], JW = 270, JH = JW * 330 / 260;
   const JTOP = [JAR[0], JAR[1] - .469 * JH * .9, .883 * JH * .9];
-  const TK_A = 1, TK_CEO = 0;
+  const TK_A = 1;
+  // gold tickets: label, table, up, go, land, landing offset (fraction of radius)
+  const GOLD_TK = [['CEO', 0, 27.2, 27.8, 28.75, .62], ['Azionisti', 2, 27.9, 28.5, 29.45, .62], ['CdA', 1, 28.6, 29.2, 30.15, -.58]];
   scene({
     pose: lay(3, { y: -200, z: -400, ry: -10, rx: 3 }), frame: true,
     html: `<div class="abs eyebrow" data-k="eb" style="left:200px;top:130px">Sorpresa n. 1</div>
       <div class="abs disp" data-k="t1" style="left:200px;top:175px;font-size:84px">L’ampolla <em>della sorte</em></div>
-      <div class="abs disp" data-k="t2" style="left:200px;top:175px;font-size:84px">Anche i <em>CEO</em>, per una sera</div>
+      <div class="abs disp" data-k="t2" style="left:200px;top:175px;font-size:84px">Anche <em>CEO, azionisti e CdA</em></div>
+      <div class="abs eyebrow" data-k="t2s" style="left:205px;top:285px;color:var(--champagne)">Per una sera, il tavolo lo sceglie la sorte</div>
       <div class="abs p3" data-k="floor" style="left:160px;top:330px;width:1600px;height:760px;transform:rotateX(60deg);transform-origin:50% 40%">
         ${TABLES.map(([x, y, rad, n], i) => `<div class="abs p3" data-k="tbl" style="left:${x - rad}px;top:${y - rad}px;width:${rad * 2}px;height:${rad * 2}px"><div class="abs table" data-k="tb" style="inset:0;flex-direction:column;gap:6px;font-size:${rad > 120 ? 96 : 80}px">${i + 1}<span style="font:800 ${rad > 120 ? 24 : 20}px/1 var(--sans);letter-spacing:.14em;color:var(--gold);font-style:normal">${n} POSTI</span></div>
            ${[...Array(n)].map((_, j) => { const a = j / n * Math.PI * 2 - Math.PI / 2; return `<div class="abs chair" data-k="chair" style="left:${rad + Math.cos(a) * (rad + 34) - 17}px;top:${rad + Math.sin(a) * (rad + 34) - 17}px"></div>`; }).join('')}</div>`).join('')}
         <div class="abs p3" data-k="jar" style="left:${JAR[0] - JW / 2}px;top:${JAR[1] - JH}px;width:${JW}px;height:${JH}px;transform-origin:50% 100%">${SVG.jar(JW)}</div>
         <div class="abs ticket" data-k="tkA" style="left:0;top:0">2</div>
-        <div class="abs ticket gold" data-k="tkC" style="left:0;top:0">CEO</div>
+        ${GOLD_TK.map(([l]) => `<div class="abs ticket gold" data-k="tkG" style="left:0;top:0;width:auto;min-width:110px;padding:0 16px;font-size:${l.length > 4 ? 22 : 28}px;text-transform:uppercase">${l}</div>`).join('')}
       </div>`,
     update(r, t) {
       st($(r, 'eb'), eo(t, 18.3, 19));
       const t1 = win(t, 18.4, 26.9, .7, .4), t2 = eo(t, 27.0, 27.7);
       st($(r, 't1'), t1, `translateY(${(1 - eo(t, 18.4, 19.1)) * 20}px)`);
-      st($(r, 't2'), t2, `translateY(${(1 - t2) * 20}px)`);
+      st($(r, 't2'), t2, `translateY(${(1 - t2) * 20}px)`); st($(r, 't2s'), eo(t, 27.8, 28.5));
       const fl = eo(t, 18.2, 19.6); st($(r, 'floor'), fl, `translateZ(${150 - (1 - fl) * 400}px) rotateX(${lerp(75, 60, fl)}deg) scale(.86)`);
       const j = eb(t, 18.3, 19.3);
       $(r, 'jar').style.transform = `translateZ(${(1 - j) * -200}px) rotateX(-60deg) scale(${.9 * j}) rotateZ(${Math.sin(t * 9) * (t > 19.2 && t < 19.8 ? 3 : 0)}deg)`;
       $$(r, 'tbl').forEach((tb, i) => {
         const a = eb(t, 18.7 + i * .09, 19.5 + i * .09); tb.style.opacity = cl(a * 1.3); tb.style.transform = `translateZ(${(1 - a) * 160}px) scale(${.6 + .4 * a})`;
-        const lit = (i === TK_A ? eo(t, 22.15, 22.6) : 0) + (i === TK_CEO ? eo(t, 30.0, 30.4) : 0);
+        const lit = (i === TK_A ? eo(t, 22.15, 22.6) : 0) + GOLD_TK.reduce((m, g) => m + (g[1] === i ? eo(t, g[4], g[4] + .4) : 0), 0);
         const tbe = $(tb, 'tb'); tbe.style.boxShadow = lit ? `0 0 ${60 * lit}px ${12 * lit}px rgba(235,203,134,${.75 * lit}), inset 0 0 40px rgba(235,203,134,${.4 * lit})` : 'none';
         tbe.style.borderColor = lit ? GOLD_HI : ''; tbe.style.color = lit ? GOLD_HI : '';
         $$(tb, 'chair').forEach((c, k) => {
@@ -332,10 +335,10 @@
         });
       });
       flyTicket($(r, 'tkA'), t, 19.4, 20.55, 22.15, [TABLES[TK_A][0], TABLES[TK_A][1] + TABLES[TK_A][2] * .62], 0);
-      flyTicket($(r, 'tkC'), t, 28.0, 28.9, 30.0, [TABLES[TK_CEO][0], TABLES[TK_CEO][1] + TABLES[TK_CEO][2] * .62], 1);
+      $$(r, 'tkG').forEach((el, k) => { const [, ti, tu, tg, tl, off] = GOLD_TK[k], T = TABLES[ti]; flyTicket(el, t, tu, tg, tl, [T[0], T[1] + T[2] * off], k + 1); });
       r.querySelectorAll('[data-k="jt"]').forEach((p, i) => p.setAttribute('opacity', .75 + .2 * Math.sin(t * 3 + i)));
     },
-    bursts: [{ t: 22.2, x: 1190, y: 640, n: 60, sp: 420 }, { t: 30.05, x: 790, y: 640, n: 90, sp: 520 }],
+    bursts: [{ t: 22.2, x: 1190, y: 640, n: 60, sp: 420 }, { t: 28.8, x: 790, y: 650, n: 70, sp: 480 }, { t: 29.5, x: 1480, y: 650, n: 70, sp: 480 }, { t: 30.2, x: 1190, y: 560, n: 70, sp: 480 }],
   });
   function flyTicket(el, t, tUp, tGo, tLand, [tx, ty], seed) {
     if (t < tUp) { el.style.opacity = 0; return; }
