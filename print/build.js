@@ -7,8 +7,9 @@ const QRCode = require('qrcode');
 const { chromium } = require('playwright');
 
 // ---- event data -----------------------------------------------------------------------------
-// Three real tables (seats): 18 + 9 + 12 = 39 guests (menu list "Scelte piatti per partecipante").
-const TABLES = [{ n: 1, seats: 18 }, { n: 2, seats: 9 }, { n: 3, seats: 12 }];
+// Three real tables (seats): 17 + 9 + 12 = 38 guests (39 on the menu list, Giada cancelled).
+const TABLES = [{ n: 1, seats: 17 }, { n: 2, seats: 9 }, { n: 3, seats: 12 }];
+const THEME = 'chiaro'; // 'chiaro' (white paper, light on ink) or 'scuro' (full teal)
 const SONG_URL = 'https://lfgzest-xmas-2026.vercel.app/sing/ot4-xIs7J_bnHwx5sjkR1BQj';
 
 const OUT = __dirname;
@@ -137,7 +138,7 @@ function ticketsHTML(themeName, qrSvg) {
     pages.push(`<section class="page">${bleed(cells)}${cropMarks()}<div class="grid">${front}</div></section>`);
     pages.push(`<section class="page">${bleed(cells)}<div class="grid">${back}</div></section>`);
   }
-  return doc(themeName, CSS(t) + ticketCSS(t, dark), pages.join(''));
+  return { css: ticketCSS(t, dark), body: pages.join('') };
 }
 
 // ---- table tent cards: A4 portrait folded in half (two 210 x 148.5 faces) -----------------------
@@ -169,8 +170,9 @@ function tentFace(t, n, qrSvg, pos, id) {
 }
 function tentsHTML(themeName, qrSvg) {
   const t = THEMES[themeName], dark = themeName === 'scuro';
-  const pages = TABLES.map((tb) => `<section class="page">${tentFace(t, tb.n, qrSvg, 'top', 'a' + tb.n)}${tentFace(t, tb.n, qrSvg, 'bot', 'b' + tb.n)}<div class="fold" style="left:0"></div><div class="fold" style="right:0"></div></section>`);
-  return doc(themeName, CSS(t) + tentCSS(t, dark), pages.join(''));
+  // each tent page is followed by a blank page, so the whole file can go through a duplex print job
+  const pages = TABLES.map((tb) => `<section class="page">${tentFace(t, tb.n, qrSvg, 'top', 'a' + tb.n)}${tentFace(t, tb.n, qrSvg, 'bot', 'b' + tb.n)}<div class="fold" style="left:0"></div><div class="fold" style="right:0"></div></section><section class="page"></section>`);
+  return { css: tentCSS(t, dark), body: pages.join('') };
 }
 
 function doc(theme, css, body) {
@@ -181,22 +183,18 @@ function doc(theme, css, body) {
 
 (async () => {
   const qrFor = (dark) => QRCode.toString(SONG_URL, { type: 'svg', margin: 0, errorCorrectionLevel: 'M', color: { dark, light: '#00000000' } });
+  const qr = await qrFor(THEMES[THEME].qrDark);
+  const tk = ticketsHTML(THEME, qr), tn = tentsHTML(THEME, qr);
+  const html = doc(THEME, CSS(THEMES[THEME]) + tk.css + tn.css, tk.body + tn.body);
+  const name = 'stampa-cena-natale-2026';
+  const htmlPath = path.join(OUT, 'src', name + '.html');
+  fs.mkdirSync(path.dirname(htmlPath), { recursive: true });
+  fs.writeFileSync(htmlPath, html);
   const browser = await chromium.launch();
   const page = await browser.newPage();
-  const jobs = [];
-  for (const th of ['chiaro', 'scuro']) {
-    const qr = await qrFor(THEMES[th].qrDark);
-    jobs.push([`bigliettini-estrazione-${th}`, ticketsHTML(th, qr)]);
-    jobs.push([`segnaposto-tavoli-${th}`, tentsHTML(th, qr)]);
-  }
-  for (const [name, html] of jobs) {
-    const htmlPath = path.join(OUT, 'src', name + '.html');
-    fs.mkdirSync(path.dirname(htmlPath), { recursive: true });
-    fs.writeFileSync(htmlPath, html);
-    await page.goto('file://' + htmlPath, { waitUntil: 'networkidle' });
-    await page.evaluate(() => document.fonts.ready);
-    await page.pdf({ path: path.join(OUT, name + '.pdf'), preferCSSPageSize: true, printBackground: true });
-    console.log('PDF', name);
-  }
+  await page.goto('file://' + htmlPath, { waitUntil: 'networkidle' });
+  await page.evaluate(() => document.fonts.ready);
+  await page.pdf({ path: path.join(OUT, name + '.pdf'), preferCSSPageSize: true, printBackground: true });
+  console.log('PDF', name);
   await browser.close();
 })();

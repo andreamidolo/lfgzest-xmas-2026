@@ -1,24 +1,17 @@
-# Stampati · Christmas Dinner 2026 (27.11, Arbostora)
+# Stampa · Christmas Dinner 2026 (27.11, Arbostora)
 
-39 ospiti, 3 tavoli: **Tavolo 1 = 18 posti, Tavolo 2 = 9, Tavolo 3 = 12**.
+38 ospiti, 3 tavoli: **Tavolo 1 = 17 posti, Tavolo 2 = 9, Tavolo 3 = 12**.
 
-| File | Cosa | Fogli A4 |
-|---|---|---|
-| `bigliettini-estrazione-chiaro.pdf` | 39 bigliettini da pescare (18× «1», 9× «2», 12× «3»), fondo bianco | 5 fogli fronte/retro (10 pagine) |
-| `bigliettini-estrazione-scuro.pdf` | stessi bigliettini, fondo teal notte | 5 fogli fronte/retro |
-| `segnaposto-tavoli-chiaro.pdf` | numero da tavolo a cavaliere con QR canzone, uno per tavolo | 3 fogli |
-| `segnaposto-tavoli-scuro.pdf` | come sopra, fondo teal | 3 fogli |
-| `anteprima.png` | anteprima di tutto | |
+Un solo file: `stampa-cena-natale-2026.pdf` (16 pagine A4).
 
-## Bigliettini
-- Stampa **fronte/retro, capovolgi sul lato lungo**, scala **100 %** (non «adatta alla pagina»). Le pagine dispari sono il fuori, le pari il dentro (QR e numero).
-  Senza stampa fronte/retro: stampa le pagine dispari, rimetti i fogli nel vassoio e stampa le pari.
-- Taglia lungo i segni agli angoli (i bigliettini sono affiancati: un taglio separa due bigliettini).
-- Piega a metà sui segni tratteggiati, con il logo fuori: il numero resta dentro.
-- Carta consigliata: 120–160 g/m², bianca o avorio.
+- **Pagine 1–10: 38 bigliettini da pescare** (17× «1», 9× «2», 12× «3»), 9 per foglio.
+- **Pagine 11–16: 3 segnaposto da tavolo** con QR della canzone, ciascuno seguito da una pagina bianca.
 
-## Segnaposto
-- Stampa solo fronte, 100 %, cartoncino 200–250 g/m². Piega a metà sul segno a lato: si regge a cavaliere e mostra il numero da entrambi i lati.
+## Come stampare
+- Tutto il file **fronte/retro, capovolgi sul lato lungo**, scala **100 %**. Le pagine bianche fanno sì che i segnaposto escano su un solo lato.
+  Senza fronte/retro: stampa le pagine dispari, rimetti i fogli nel vassoio e stampa le pari (1–10 basta; dei segnaposto servono solo le pagine 11, 13 e 15).
+- Bigliettini: taglia sui segni agli angoli, piega a metà sui segni tratteggiati con il logo fuori; il numero resta dentro.
+- Segnaposto: piega il foglio a metà sul segno laterale, sta in piedi a cavaliere e mostra il numero da entrambi i lati.
 
 ## Rigenerare
-`npm i && node print/build.js`: tavoli e link nel blocco in alto di `build.js`.
+`npm i && node print/build.js`: tavoli, tema (chiaro/scuro) e link nel blocco in alto di `build.js`.
