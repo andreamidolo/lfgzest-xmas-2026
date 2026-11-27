@@ -16,7 +16,8 @@ const server = http.createServer((req, res) => {
 });
 (async () => {
   await new Promise((r) => server.listen(0, '127.0.0.1', r));
-  const url = `http://127.0.0.1:${server.address().port}/video/src/index.html?render=1`;
+  const LANG = arg('lang', '');
+  const url = `http://127.0.0.1:${server.address().port}/video/src/index.html?render=1${LANG ? '&lang=' + LANG : ''}`;
   const f0 = Math.round(FROM * FPS), f1 = Math.round(TO * FPS), total = f1 - f0;
   const per = Math.ceil(total / WORKERS);
   const browser = await chromium.launch({ args: ['--disable-gpu-vsync', '--font-render-hinting=none'] });

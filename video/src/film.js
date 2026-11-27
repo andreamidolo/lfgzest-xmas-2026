@@ -127,7 +127,9 @@
   }
 
   // ---------- lyrics ----------
-  const LY = window.LYRICS || [];
+  // ?lang=en swaps the karaoke lyrics (subtitles and chorus titles) for the English translation
+  const LANG = new URLSearchParams(location.search).get('lang');
+  const LY = (LANG === 'en' && window.LYRICS_EN) || window.LYRICS || [];
   const CHORUS = [[57.5, 74.25], [91.7, 108.45]];
   const inChorus = (t) => CHORUS.some(([a, b]) => t >= a && t < b);
   // split long lines into readable chunks
