@@ -34,7 +34,7 @@
       return `<div class="ent ${e.hidden ? 'hid' : ''} ${e.finalist ? 'fin' : ''} ${open.has(e.id) ? 'open' : ''}" data-e="${e.id}">
         <div class="ent-row" data-toggle>
           ${c && c.image ? `<img src="${esc(c.image)}" alt="">` : '<div class="ph">♪</div>'}
-          <div class="t"><b>${esc(e.songTitle || e.title || 'Untitled')}</b><small>${esc(e.name)} · ${new Date(e.createdAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}${e.hidden ? ' · hidden' : ''}</small></div>
+          <div class="t"><b>${esc(e.songTitle || e.title || 'Untitled')}</b><small>${esc(e.name)}${e.language ? ' · ' + ({ it: '🇮🇹', en: '🇬🇧', es: '🇪🇸' })[e.language] : ''} · ${new Date(e.createdAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}${e.hidden ? ' · hidden' : ''}</small></div>
           <div class="score" title="Lyrics ${p.lyrics}/45 · Structure ${p.structure}/5 · Style ${p.style}/15 · Title ${p.title}/5 · AI ${p.ai == null ? '–' : p.ai}/30"><b>${e.effort.total}</b><span>EFFORT</span></div>
           <div class="ent-acts">
             <span class="status-pill st-${e.status.replace(/\s/g, '-')}">${stLabel[e.status] || e.status}</span>
@@ -43,7 +43,7 @@
           </div>
         </div>
         <div class="ent-det">
-          <div><span class="eyebrow">What ${esc(e.name)} wrote</span>${e.title ? `<p class="tiny" style="margin:4px 0 0">Title: ${esc(e.title)}</p>` : ''}<pre>${esc(e.lyrics)}</pre>${e.style ? `<p class="tiny" style="margin:8px 0 0">Style: ${esc(e.style)}</p>` : ''}</div>
+          <div><span class="eyebrow">What ${esc(e.name)} wrote</span>${e.title ? `<p class="tiny" style="margin:4px 0 0">Title: ${esc(e.title)}</p>` : ''}<pre>${esc(e.lyrics)}</pre>${e.style ? `<p class="tiny" style="margin:8px 0 0">Style: ${esc(e.style)}</p>` : ''}${e.language ? `<p class="tiny" style="margin:4px 0 0">Language: ${({ it: '🇮🇹 Italiano', en: '🇬🇧 English', es: '🇪🇸 Español' })[e.language] || e.language}</p>` : ''}</div>
           <div><span class="eyebrow">Sent to Suno</span>${e.songLyrics ? `<pre>${esc(e.songLyrics)}</pre><p class="tiny" style="margin:8px 0 0">Style: ${esc(e.songStyle || '')}</p>` : '<p class="tiny">Not composed yet.</p>'}</div>
           <div class="full breakdown">Effort ${e.effort.total}/100 — lyrics ${p.lyrics}/45 · structure ${p.structure}/5 · own style ${p.style}/15 · title ${p.title}/5 · care & originality (AI) ${p.ai == null ? 'pending' : p.ai + '/30'}${e.effortNote ? ' — ' + esc(e.effortNote) : ''}${e.aiNote ? `<br>AI note: ${esc(e.aiNote)}` : ''}</div>
           <div class="full row2">

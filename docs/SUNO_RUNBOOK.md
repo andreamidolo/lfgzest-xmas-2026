@@ -2,7 +2,7 @@
 
 ## The format
 - One QR for everyone (`/sing/<token>`, printed from **Songs → Print / save QR poster**).
-- Each guest writes: name (picked from the guest list), optional title, lyrics (≤ 1500 chars), style in their own words (≤ 400 chars, optional).
+- Each guest writes: name (picked from the guest list), optional title, lyrics (≤ 1500 chars), style in their own words (≤ 400 chars, optional), and **the language of the song: Italiano, English or Español** (required).
 - They can edit for **3 minutes**; then the composer polishes it and it is produced on Suno automatically. The finished song appears on their phone.
 - **Effort Score (0–100)**: lyrics length 45 · structure 5 · own style 15 · title 5 (computed by the app) + care & originality 30 (judged by the composer).
 - Organizer: **Suggest top 3 by Effort Score** → adjust with ★ → the 3 finalists go to the Karaoke final and the **Applause Meter**.
@@ -17,7 +17,8 @@ Log in: `POST https://lfgzest-xmas-2026.vercel.app/api/admin/login {"password": 
 
 **A. compose** — for each entry, `PUT /api/admin/entries/<id>/composed` with
 `{songTitle, songLyrics, songStyle, aiNote, effortAi (0–30), effortNote}`:
-- **Refine, don't rewrite.** Keep the guest's words. Long lyrics: only add section tags ([Verse]/[Chorus]…), fix obvious typos, maybe repeat their best line as the chorus. Short lyrics (a few lines): expand into a ~75–90 s song built around their lines and theme, English.
+- **Language:** write `songLyrics` (and the title, unless they gave one) in the entry's `language` (Italiano / English / Español). If the guest wrote in another language, translate and adapt their lines into the chosen one, keeping their images and jokes; add the language to `songStyle` too (e.g. "Italian lyrics").
+- **Refine, don't rewrite.** Keep the guest's words. Long lyrics: only add section tags ([Verse]/[Chorus]…), fix obvious typos, maybe repeat their best line as the chorus. Short lyrics (a few lines): expand into a ~75–90 s song built around their lines and theme, in the chosen language.
 - Title: theirs if given, else invent one from their words.
 - `songStyle` ≤ 1000 chars: start from their style text; make it Suno-ready (genre, BPM, instruments, vocal, mood). One main genre, max one secondary + a small influence; cheerful, catchy, no aggressive mixes. No style given → choose one that fits the lyrics, festive.
 - Keep it fun but tasteful (no cruelty, nothing offensive about colleagues); soften if needed and say so in `aiNote`.

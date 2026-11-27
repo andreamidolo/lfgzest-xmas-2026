@@ -12,7 +12,10 @@
 
   let me = +ls.get(ME) || null;      // selected guest (participant id)
   let free = !me && !!ls.get(KEY);   // "not on the list" mode
-  let st = null, people = [], editing = false;
+  let st = null, people = [], editing = false, lang = '';
+  const LANG = { it: '🇮🇹 Italiano', en: '🇬🇧 English', es: '🇪🇸 Español' };
+  const setLang = (l) => { lang = l || ''; document.querySelectorAll('#langs [data-l]').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.l === lang))); };
+  document.getElementById('langs').addEventListener('click', (e) => { const b = e.target.closest('[data-l]'); if (b) setLang(b.dataset.l); });
   const show = (v) => { ['loading', 'fatal', 'whoView', 'formView', 'doneView', 'songView'].forEach((x) => $(x).classList.toggle('hidden', x !== v)); $('personBar').classList.toggle('hidden', !me || ['whoView', 'loading', 'fatal'].includes(v)); };
   const req = (url, o = {}) => fetch(url, { method: o.method || 'GET', headers: { 'Content-Type': 'application/json', 'x-entry': ls.get(KEY) }, body: o.body ? JSON.stringify(o.body) : undefined })
     .then(async (r) => { const d = await r.json().catch(() => ({})); if (!r.ok) { const e = new Error(d.error || 'Something went wrong'); e.status = r.status; throw e; } return d; }, () => { throw new Error('No connection. Check your signal and try again.'); });
@@ -74,6 +77,7 @@
       const m = st.mine;
       $('mTitle').textContent = m.title || '(no title — the AI will find one)'; $('mLyrics').textContent = m.lyrics;
       $('mStyle').textContent = m.style; $('mStyleBlk').classList.toggle('hidden', !m.style);
+      $('mLang').textContent = m.language ? 'Language: ' + LANG[m.language] : '';
       $('doneStatus').textContent = label[m.status] || m.status; $('doneStatus').className = 'status-pill st-' + (m.status === 'Received' ? 'Submitted' : 'In-Production');
       $('editBtn').classList.toggle('hidden', !m.editable);
       $('doneSub').textContent = m.editable ? 'You can still edit it for a few minutes. Then the AI polishes it and sends it to the studio — your song will appear right here.'
@@ -97,9 +101,9 @@
   }
   $('form').addEventListener('submit', async (ev) => {
     ev.preventDefault();
-    const body = { name: $('name').value.trim(), title: $('title').value.trim(), lyrics: $('lyrics').value.trim(), style: $('style').value.trim() };
+    const body = { name: $('name').value.trim(), title: $('title').value.trim(), lyrics: $('lyrics').value.trim(), style: $('style').value.trim(), language: lang };
     const m = $('formMsg'); m.classList.add('hidden');
-    const err = (!me && !body.name) ? 'Please tell us your name.' : !body.lyrics ? 'Write your lyrics — even a few lines!' : clen(body.lyrics) > 1500 ? 'Lyrics are over 1,500 characters.' : clen(body.style) > 400 ? 'Style is over 400 characters.' : '';
+    const err = (!me && !body.name) ? 'Please tell us your name.' : !body.lyrics ? 'Write your lyrics — even a few lines!' : !body.language ? 'Choose the language of your song.' : clen(body.lyrics) > 1500 ? 'Lyrics are over 1,500 characters.' : clen(body.style) > 400 ? 'Style is over 400 characters.' : '';
     if (err) { m.textContent = err; m.classList.remove('hidden'); m.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
     const btn = $('submitBtn'); btn.disabled = true; const lbl = btn.textContent; btn.textContent = 'Sending…';
     try {
@@ -112,7 +116,7 @@
     finally { btn.disabled = false; btn.textContent = lbl; }
   });
   $('editBtn').addEventListener('click', () => {
-    const x = st.mine; editing = true; $('name').value = st.person ? st.person.name : ''; $('title').value = x.title; $('lyrics').value = x.lyrics; $('style').value = x.style;
+    const x = st.mine; editing = true; $('name').value = st.person ? st.person.name : ''; $('title').value = x.title; $('lyrics').value = x.lyrics; $('style').value = x.style; setLang(x.language);
     counters(); $('submitBtn').textContent = 'Update My Song'; $('cancelEdit').classList.remove('hidden'); show('formView');
   });
   $('cancelEdit').addEventListener('click', () => { editing = false; render(); });

@@ -58,7 +58,7 @@
       </div>
       <div class="field">
         <label for="lyrics">Lyrics</label>
-        <p class="hint">A few lines or a whole song &mdash; a memory, a story, an inside joke. English works best. The AI keeps your words and polishes them into a song.</p>
+        <p class="hint">A few lines or a whole song &mdash; a memory, a story, an inside joke. The AI keeps your words and polishes them into a song in the language you choose below.</p>
         <textarea id="lyrics" rows="9" data-max="1500" placeholder="[Verse]&#10;The boss is answering emails at the table&#10;While the snow falls on the lake&#10;&#10;[Chorus]&#10;One last drink, one last dance&hellip;"></textarea>
         <div class="counter" data-for="lyrics"></div>
       </div>
@@ -68,6 +68,14 @@
         <textarea id="style" rows="3" data-max="400" placeholder="e.g. 80s disco-funk with slap bass, big brass, a soulful female voice and sleigh bells" style="min-height:90px"></textarea>
         <div class="counter" data-for="style"></div>
         <div class="vibes" id="chips"></div>
+      </div>
+      <div class="field">
+        <label>Language of your song</label>
+        <div class="vibes" id="langs" role="radiogroup">
+          <button type="button" class="vibe" role="radio" aria-checked="false" data-l="it">🇮🇹 Italiano</button>
+          <button type="button" class="vibe" role="radio" aria-checked="false" data-l="en">🇬🇧 English</button>
+          <button type="button" class="vibe" role="radio" aria-checked="false" data-l="es">🇪🇸 Español</button>
+        </div>
       </div>
       <div id="formMsg" class="msg err hidden" role="alert"></div>
       <button type="submit" id="submitBtn" class="btn btn-gold btn-big">Submit My Song</button>
@@ -89,6 +97,7 @@
       <h3 id="mTitle" style="margin-top:6px"></h3>
       <div class="blk"><span class="eyebrow">Lyrics</span><pre id="mLyrics"></pre></div>
       <div class="blk" id="mStyleBlk"><span class="eyebrow">Style</span><pre id="mStyle"></pre></div>
+      <p class="tiny" id="mLang" style="margin-top:10px"></p>
     </div>
   </section>
 

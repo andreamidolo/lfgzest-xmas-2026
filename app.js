@@ -446,6 +446,7 @@ app.get('/api/admin/export/songs.csv', wrap(async (req, res) => {
 // an Effort Score proposes 3 finalists; the organizer confirms.
 // ======================================================================
 const ELIM = { name: 40, title: 80, lyrics: 1500, style: 400 };
+const LANGS = { it: 'Italiano', en: 'English', es: 'Español' };
 const GRACE_MIN = 3; // minutes a guest can still fix their entry before it is composed
 async function setting(key) { const { rows } = await q('SELECT value FROM settings WHERE key=$1', [key]); return rows[0] ? rows[0].value : null; }
 async function setSetting(key, value) { await q('INSERT INTO settings (key, value) VALUES ($1,$2) ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value', [key, String(value)]); }
@@ -468,7 +469,7 @@ function effort(e) {
 }
 function entryOut(e) {
   const p = parseProd(e.production);
-  return { id: e.id, participantId: e.participant_id, name: e.name, title: e.title, lyrics: e.lyrics, style: e.style, status: e.status,
+  return { id: e.id, participantId: e.participant_id, name: e.name, title: e.title, lyrics: e.lyrics, style: e.style, language: e.language, status: e.status,
     songTitle: e.song_title, songLyrics: e.song_lyrics, songStyle: e.song_style, aiNote: e.ai_note, effortNote: e.effort_note,
     effort: effort(e), production: p, hidden: e.hidden, finalist: e.finalist,
     applauseScore: e.applause_score, applausePeak: e.applause_peak, createdAt: e.created_at, updatedAt: e.updated_at };
@@ -484,11 +485,12 @@ async function myEntry(req) {
   return e;
 }
 async function readEntry(b) {
-  const d = { name: str(b.name), title: str(b.title), lyrics: str(b.lyrics), style: str(b.style), participantId: null };
+  const d = { name: str(b.name), title: str(b.title), lyrics: str(b.lyrics), style: str(b.style), language: LANGS[b.language] ? b.language : '', participantId: null };
   const pid = parseInt(b.participantId, 10);
   if (pid) { const { rows } = await q('SELECT id, name FROM participants WHERE id=$1', [pid]); if (rows[0]) { d.participantId = rows[0].id; d.name = rows[0].name; } }
   if (!d.name) return { err: 'Please tell us your name.' };
   if (!d.lyrics) return { err: 'Write your lyrics — a few lines are enough, a whole song is even better!' };
+  if (!d.language) return { err: 'Choose the language of your song.' };
   for (const k of ['name', 'title', 'lyrics', 'style']) if (charLen(d[k]) > ELIM[k]) return { err: `${k[0].toUpperCase() + k.slice(1)} is too long (max ${ELIM[k]} characters).` };
   return { d };
 }
@@ -502,7 +504,7 @@ app.get('/api/s/:token', wrap(async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   if (!(await checkEventToken(req.params.token))) return bad(res, 'This link is not valid. Please scan the QR code again.', 404);
   const [mine, { rows: members }] = await Promise.all([myEntry(req), q('SELECT id, name FROM participants ORDER BY lower(name)')]);
-  res.json({ open: await eventOpen(), members, mine: mine && { id: mine.id, participantId: mine.participant_id, name: mine.name, title: mine.title, lyrics: mine.lyrics, style: mine.style,
+  res.json({ open: await eventOpen(), members, mine: mine && { id: mine.id, participantId: mine.participant_id, name: mine.name, title: mine.title, lyrics: mine.lyrics, style: mine.style, language: mine.language,
     status: mine.status, editable: mine.status === 'Received' }, song: guestSong(mine), limits: ELIM, graceMin: GRACE_MIN });
 }));
 app.post('/api/s/:token/entries', wrap(async (req, res) => {
@@ -511,7 +513,7 @@ app.post('/api/s/:token/entries', wrap(async (req, res) => {
   const { d, err } = await readEntry(req.body || {}); if (err) return bad(res, err);
   const { rows: n } = await q('SELECT COUNT(*)::int AS n FROM entries'); if (n[0].n >= 200) return bad(res, 'We have plenty of songs already!', 429);
   const tok = newToken();
-  const { rows } = await q('INSERT INTO entries (participant_id, name, title, lyrics, style, edit_token) VALUES ($1,$2,$3,$4,$5,$6) RETURNING *', [d.participantId, d.name, d.title, d.lyrics, d.style, tok]);
+  const { rows } = await q('INSERT INTO entries (participant_id, name, title, lyrics, style, language, edit_token) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *', [d.participantId, d.name, d.title, d.lyrics, d.style, d.language, tok]);
   res.json({ ok: true, key: `${rows[0].id}.${tok}` });
 }));
 app.put('/api/s/:token/entries/mine', wrap(async (req, res) => {
@@ -519,7 +521,7 @@ app.put('/api/s/:token/entries/mine', wrap(async (req, res) => {
   const e = await myEntry(req); if (!e) return bad(res, 'We could not find your song on this device.', 404);
   if (e.status !== 'Received') return bad(res, 'Your song is already in the studio — it can no longer be changed.', 423);
   const { d, err } = await readEntry(req.body || {}); if (err) return bad(res, err);
-  await q("UPDATE entries SET participant_id=$2, name=$3, title=$4, lyrics=$5, style=$6, updated_at=now() WHERE id=$1 AND status='Received'", [e.id, d.participantId, d.name, d.title, d.lyrics, d.style]);
+  await q("UPDATE entries SET participant_id=$2, name=$3, title=$4, lyrics=$5, style=$6, language=$7, updated_at=now() WHERE id=$1 AND status='Received'", [e.id, d.participantId, d.name, d.title, d.lyrics, d.style, d.language]);
   res.json({ ok: true });
 }));
 
@@ -541,7 +543,7 @@ app.get('/api/s/:token/p/:pid', wrap(async (req, res) => {
   const p = rows[0]; const e = await personEntry(pid);
   res.json({ open: await eventOpen(), limits: ELIM,
     person: { id: p.id, name: p.name, menu: p.menu, seat: p.seat, table: p.table_number ? { number: p.table_number, name: p.table_name } : null },
-    mine: e && { id: e.id, title: e.title, lyrics: e.lyrics, style: e.style, status: e.status, editable: e.status === 'Received' }, song: guestSong(e) });
+    mine: e && { id: e.id, title: e.title, lyrics: e.lyrics, style: e.style, language: e.language, status: e.status, editable: e.status === 'Received' }, song: guestSong(e) });
 }));
 app.post('/api/s/:token/p/:pid/song', wrap(async (req, res) => {
   if (!(await checkEventToken(req.params.token))) return bad(res, 'This link is not valid.', 404);
@@ -551,11 +553,11 @@ app.post('/api/s/:token/p/:pid/song', wrap(async (req, res) => {
   const e = await personEntry(pid);
   if (e) {
     if (e.status !== 'Received') return bad(res, 'This song is already in the studio — it can no longer be changed.', 423);
-    await q('UPDATE entries SET title=$2, lyrics=$3, style=$4, updated_at=now() WHERE id=$1', [e.id, d.title, d.lyrics, d.style]);
+    await q('UPDATE entries SET title=$2, lyrics=$3, style=$4, language=$5, updated_at=now() WHERE id=$1', [e.id, d.title, d.lyrics, d.style, d.language]);
     return res.json({ ok: true });
   }
   if (!(await eventOpen())) return bad(res, 'Submissions are closed — the songs are being produced!', 423);
-  await q('INSERT INTO entries (participant_id, name, title, lyrics, style, edit_token) VALUES ($1,$2,$3,$4,$5,$6)', [pid, d.name, d.title, d.lyrics, d.style, newToken()]);
+  await q('INSERT INTO entries (participant_id, name, title, lyrics, style, language, edit_token) VALUES ($1,$2,$3,$4,$5,$6,$7)', [pid, d.name, d.title, d.lyrics, d.style, d.language, newToken()]);
   res.json({ ok: true });
 }));
 
@@ -633,7 +635,7 @@ app.get('/api/admin/queue2', wrap(async (req, res) => {
   const force = req.query.now === '1';
   const { rows } = await q(`SELECT * FROM entries WHERE hidden=FALSE AND (status='Composed' OR (status='Received' AND (${force ? 'TRUE' : `updated_at < now() - interval '${GRACE_MIN} minutes'`}))) ORDER BY id`);
   res.json({
-    compose: rows.filter((e) => e.status === 'Received').map((e) => ({ id: e.id, name: e.name, title: e.title, lyrics: e.lyrics, style: e.style })),
+    compose: rows.filter((e) => e.status === 'Received').map((e) => ({ id: e.id, name: e.name, title: e.title, lyrics: e.lyrics, style: e.style, language: LANGS[e.language] || 'English' })),
     produce: rows.filter((e) => e.status === 'Composed').map((e) => ({ id: e.id, name: e.name, songTitle: e.song_title, songLyrics: e.song_lyrics, songStyle: e.song_style })),
   });
 }));
