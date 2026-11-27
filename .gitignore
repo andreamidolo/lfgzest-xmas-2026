@@ -4,3 +4,4 @@ data
 .vercel
 .neon
 .env.local
+print/src/
