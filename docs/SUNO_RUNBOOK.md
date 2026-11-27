@@ -30,12 +30,14 @@ Log in: `POST https://lfgzest-xmas-2026.vercel.app/api/admin/login {"password": 
 2. Suno `audio-create` custom mode: title, lyrics, style, `duration` 90, `idempotency_key = lfgz-xmas-e<id>-<updatedAt-ish or attempt>`. Start all of them before waiting.
 3. `audio-wait` with all clip ids until complete.
 4. `audio-settings visibility=public` on both versions (the karaoke streams `https://cdn1.suno.ai/<id>.mp4`, reachable only when published).
-5. `audio-lyrics-alignment` on both, poll until `complete` (best effort; skip on `unavailable`).
+5. Word timings (`audio-lyrics-alignment`) are only needed for the **3 finalists** (big-screen karaoke). Regular songs show plain lyrics. Fetch them when the finalists are chosen and `PUT .../production` with `clips: [{id, alignment}]` for the selected version.
 6. `PUT /api/admin/entries/<id>/production` with `clips: [{id, title, duration, image, audioUrl, alignment}]` and `"status":"Ready"`.
 On a Suno error: status `Error` and continue with the others.
 
 Never produce hidden entries; never re-produce Ready ones unless the organizer pressed **Redo**.
 
 ## Final
+- Finalists stay hidden (Karaoke + guests' phones) until the organizer presses **Reveal the final** (Songs → The final) or asks in chat (`PATCH /api/admin/event {"finalRevealed": true}`). After the reveal, the Karaoke shows the 🏆 section and, for the logged-in organizer only, the **👏 Applause Meter** button (also on each finalist's big-screen page).
+- Measured on 27.11 (test): Suno ≈ 10 s to streaming, ≈ 30 s to complete; word timings ≈ 2 min after that. A guest's song reaches their phone ≈ 3 min (edit window) + ≤ 2 min (loop) + ≈ 1 min.
 - Karaoke: `/karaoke` (finalists first) and `/karaoke/<id>` (big screen, words in time). Organizer preview `/admin/karaoke/<id>`.
 - Applause Meter: `/admin/applause` — measures the 3 finalists, reveals the winner.

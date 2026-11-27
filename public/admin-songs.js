@@ -71,7 +71,7 @@
   });
   $('openBtn').addEventListener('click', () => act('/api/admin/event', 'PATCH', { open: !V.event.open }, V.event.open ? 'Submissions closed' : 'Submissions open'));
   $('revealBtn').addEventListener('click', () => {
-    const on = !V.event.finalRevealed; const n = V.entries.filter((e) => e.finalist).length;
+    if (!V) return; const on = !V.event.finalRevealed; const n = V.entries.filter((e) => e.finalist).length;
     if (on && n < 3 && !confirm(`Only ${n} finalist(s) selected. Reveal anyway?`)) return;
     act('/api/admin/event', 'PATCH', { finalRevealed: on }, on ? '🏆 Final revealed in the Karaoke' : 'Final hidden again');
   });
