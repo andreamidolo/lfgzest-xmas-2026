@@ -446,7 +446,7 @@ app.get('/api/admin/export/songs.csv', wrap(async (req, res) => {
 // an Effort Score proposes 3 finalists; the organizer confirms.
 // ======================================================================
 const ELIM = { name: 40, title: 80, lyrics: 1500, style: 400 };
-const LANGS = { it: 'Italiano', en: 'English', es: 'Español' };
+const LANGS = { it: 'Italiano', en: 'English (North American)', es: 'Español (Latin American)', gsw: 'Schwiizerdütsch (Swiss German)' };
 const GRACE_MIN = 3; // minutes a guest can still fix their entry before it is composed
 async function setting(key) { const { rows } = await q('SELECT value FROM settings WHERE key=$1', [key]); return rows[0] ? rows[0].value : null; }
 async function setSetting(key, value) { await q('INSERT INTO settings (key, value) VALUES ($1,$2) ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value', [key, String(value)]); }

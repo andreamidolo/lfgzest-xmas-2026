@@ -179,7 +179,7 @@
 
   function reveal() {
     const done = S.tables.filter((t) => t.applause_score != null);
-    if (!done.length) return toast('Measure at least one team first', true);
+    if (!done.length) return toast('Measure at least one song first', true);
     if (done.length < S.tables.length && !confirm('Not all finalists have been measured. Reveal anyway?')) return;
     const best = Math.max(...done.map((t) => t.applause_score));
     const win = done.filter((t) => best - t.applause_score < 0.5).map((t) => t.id);

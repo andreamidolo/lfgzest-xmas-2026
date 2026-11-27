@@ -48,7 +48,7 @@
   }
   const tableById = (id) => S.tables.find((t) => t.id === id);
   const subByTable = (id) => S.submissions.find((s) => s.tableId === id);
-  const tLabel = (t) => 'Team ' + t.number + (t.name ? ' · ' + t.name : '');
+  const tLabel = (t) => 'Table ' + t.number + (t.name ? ' · ' + t.name : '');
   const fmtTime = (d) => new Date(d).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   const editingIn = (el) => document.activeElement && el.contains(document.activeElement) && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
   const ideasOf = (id) => S.contributions.filter((c) => c.table_id === id);
@@ -75,8 +75,8 @@
     $('sGuests').textContent = seated + '/' + S.participants.length;
     const live = S.tables.filter((t) => { const s = subByTable(t.id); return s && ['Ready', 'Played'].includes(s.status); });
     const wait = S.tables.filter((t) => !live.includes(t));
-    $('sDone').innerHTML = live.map((t) => `<span class="chip done">Team ${t.number}</span>`).join('') || '<span class="tiny">None yet</span>';
-    $('sWait').innerHTML = wait.map((t) => { const s = subByTable(t.id); return `<span class="chip">Team ${t.number} · ${s ? esc(s.status) : t.gen_requested_at ? 'Composing' : ideasOf(t.id).length + (ideasOf(t.id).length === 1 ? ' idea' : ' ideas')}</span>`; }).join('') || '<span class="tiny">All three songs are ready 🎉</span>';
+    $('sDone').innerHTML = live.map((t) => `<span class="chip done">Table ${t.number}</span>`).join('') || '<span class="tiny">None yet</span>';
+    $('sWait').innerHTML = wait.map((t) => { const s = subByTable(t.id); return `<span class="chip">Table ${t.number} · ${s ? esc(s.status) : t.gen_requested_at ? 'Composing' : ideasOf(t.id).length + (ideasOf(t.id).length === 1 ? ' idea' : ' ideas')}</span>`; }).join('') || '<span class="tiny">All three songs are ready 🎉</span>';
   }
 
   // ---------- teams: ideas → AI proposal → approval → Suno ----------
@@ -98,7 +98,7 @@
   }
   function membersHtml(t) {
     const ms = membersOf(t.id);
-    if (!ms.length) return '<div class="members-row"><span class="tiny">No members yet — assign guests to this team in <a href="#seating" data-goseat>Seating</a>.</span></div>';
+    if (!ms.length) return '<div class="members-row"><span class="tiny">No members yet — assign guests to this table in <a href="#seating" data-goseat>Seating</a>.</span></div>';
     const lit = ms.filter(hasContributed).length;
     return `<div class="members-row"><span class="eyebrow">Members · ${lit}/${ms.length} contributed</span>
       <div class="mchips">${ms.map((p) => `<span class="mchip ${hasContributed(p) ? 'lit' : ''}">${esc(p.name)}</span>`).join('')}</div></div>`;
@@ -108,7 +108,7 @@
     const pending = !!t.gen_requested_at;
     const vibes = {}; ideas.forEach((i) => { if (i.vibe) vibes[i.vibe] = (vibes[i.vibe] || 0) + 1; });
     const ideaList = ideas.map((i) => `<li><b>${esc(i.name)}</b><span>“${esc(i.idea)}”</span>${i.vibe ? `<em>${esc(i.vibe)}</em>` : ''}<button class="x" data-delidea="${i.id}" title="Remove this idea">✕</button></li>`).join('')
-      || '<li class="tiny">No ideas yet — guests add them by scanning the team QR.</li>';
+      || '<li class="tiny">No ideas yet — guests add them by scanning the QR.</li>';
     const L = S.limits;
     const prop = s ? `
       <div class="proposal-box">
@@ -118,7 +118,7 @@
         <label class="fl">Concept<input type="text" data-f="concept" maxlength="${L.concept}" value="${esc(s.concept)}"></label>
         <label class="fl"><span>Suno style prompt <button type="button" class="btn btn-sm" data-copy="style">Copy</button></span><textarea data-f="style" rows="3" maxlength="${L.style}">${esc(s.style)}</textarea><span class="cnt" data-cnt="style"></span></label>
         <label class="fl"><span>Lyrics <button type="button" class="btn btn-sm" data-copy="lyrics">Copy</button></span><textarea data-f="lyrics" rows="10" maxlength="${L.lyrics}">${esc(s.lyrics)}</textarea></label>
-        <label class="fl">Why this works <span class="tiny">(shown to the team after approval)</span><textarea data-f="explanation" rows="4" maxlength="${L.explanation}">${esc(s.explanation)}</textarea></label>
+        <label class="fl">Why this works <span class="tiny">(shown to the guests after approval)</span><textarea data-f="explanation" rows="4" maxlength="${L.explanation}">${esc(s.explanation)}</textarea></label>
         <div class="actions">
           <button class="btn btn-sm" data-save disabled>Save edits</button>
           <button class="btn btn-sm" data-copy="all">Copy All</button>
@@ -140,7 +140,7 @@
   }
   function renderTeams(force) {
     const box = $('songs'); if (!box) return;
-    if (!S.tables.length) { box.innerHTML = '<p class="muted">No teams.</p>'; return; }
+    if (!S.tables.length) { box.innerHTML = '<p class="muted">No tables.</p>'; return; }
     // per-team diff so a card being edited is never clobbered
     const want = S.tables.map((t) => t.id).join(',');
     if (box.dataset.ids !== want) { box.innerHTML = S.tables.map((t) => `<div data-slot="${t.id}"></div>`).join(''); box.dataset.ids = want; force = true; }
@@ -151,7 +151,7 @@
       if (dirty.has(t.id) || editingIn(slot)) { slot.querySelector('.song')?.classList.add('stale'); continue; }
       const prevNew = slot.dataset.sig && JSON.parse(slot.dataset.sig)[4]?.generatedAt !== subByTable(t.id)?.generatedAt;
       slot.innerHTML = teamHtml(t); slot.dataset.sig = sig;
-      if (prevNew && subByTable(t.id)) { slot.querySelector('.song').classList.add('new'); toast(`New proposal for Team ${t.number} ✦`); }
+      if (prevNew && subByTable(t.id)) { slot.querySelector('.song').classList.add('new'); toast(`New proposal for Table ${t.number} ✦`); }
       updCounts(slot);
     }
   }
@@ -168,10 +168,10 @@
     const val = (f) => card.querySelector(`[data-f="${f}"]`).value;
     const c = e.target.closest('[data-copy]');
     if (c) { e.preventDefault(); const k = c.dataset.copy; const cur = { ...s, title: val('title'), concept: val('concept'), lyrics: val('lyrics'), style: val('style') }; copyText(k === 'all' ? formatAll(t, cur) : cur[k], k === 'all' ? 'Full proposal' : k === 'style' ? 'Style' : 'Lyrics'); return; }
-    if (e.target.closest('[data-lock]')) act(`/api/admin/tables/${id}`, 'PATCH', { locked: !t.locked }, t.locked ? `Team ${t.number}: ideas reopened` : `Team ${t.number}: ideas closed`);
+    if (e.target.closest('[data-lock]')) act(`/api/admin/tables/${id}`, 'PATCH', { locked: !t.locked }, t.locked ? `Table ${t.number}: ideas reopened` : `Table ${t.number}: ideas closed`);
     if (e.target.closest('[data-gen]')) {
       if (dirty.has(id) && !confirm('You have unsaved edits — regenerate anyway?')) return;
-      if (s && s.status !== 'Draft' && !confirm(`Team ${t.number}'s song is already "${s.status}". Generating a new proposal resets it to Draft. Continue?`)) return;
+      if (s && s.status !== 'Draft' && !confirm(`Table ${t.number}'s song is already "${s.status}". Generating a new proposal resets it to Draft. Continue?`)) return;
       dirty.delete(id); act(`/api/admin/teams/${id}/generate`, 'POST', undefined, 'Sent to the composer ✦');
     }
     if (e.target.closest('[data-cancelgen]')) act(`/api/admin/teams/${id}/cancel-generate`, 'POST', undefined, 'Cancelled');
@@ -184,7 +184,7 @@
         const body = { title: val('title'), concept: val('concept'), lyrics: val('lyrics'), style: val('style'), explanation: val('explanation') };
         dirty.delete(id); if (await act(`/api/admin/teams/${id}/proposal`, 'PUT', body) === false) { dirty.add(id); return; }
       }
-      act(`/api/admin/submissions/${id}`, 'PATCH', { status: 'Approved' }, `Team ${t.number} approved — queued for Suno`);
+      act(`/api/admin/submissions/${id}`, 'PATCH', { status: 'Approved' }, `Table ${t.number} approved — queued for Suno`);
     }
     if (e.target.closest('[data-goseat]')) { e.preventDefault(); setTab('seating'); return; }
     const d = e.target.closest('[data-delidea]');
@@ -196,12 +196,12 @@
     if (e.target.matches('[data-status]')) act(`/api/admin/submissions/${id}`, 'PATCH', { status: e.target.value }, 'Status: ' + e.target.value);
   });
 
-  if ($('lockAll')) $('lockAll').addEventListener('click', () => confirm('Close ideas for ALL teams?') && act('/api/admin/lock-all', 'POST', { locked: true }, 'All ideas closed'));
-  if ($('unlockAll')) $('unlockAll').addEventListener('click', () => act('/api/admin/lock-all', 'POST', { locked: false }, 'All teams reopened'));
+  if ($('lockAll')) $('lockAll').addEventListener('click', () => confirm('Close ideas for ALL tables?') && act('/api/admin/lock-all', 'POST', { locked: true }, 'All ideas closed'));
+  if ($('unlockAll')) $('unlockAll').addEventListener('click', () => act('/api/admin/lock-all', 'POST', { locked: false }, 'All tables reopened'));
 
   // ---------- seating (manual only) ----------
   function tableOptions(sel) {
-    return `<option value="">—</option>` + S.tables.map((t) => `<option value="${t.id}" ${t.id === sel ? 'selected' : ''}>Team ${t.number}</option>`).join('');
+    return `<option value="">—</option>` + S.tables.map((t) => `<option value="${t.id}" ${t.id === sel ? 'selected' : ''}>Table ${t.number}</option>`).join('');
   }
   function renderSeating() {
     const un = S.participants.filter((p) => !p.table_id);
@@ -232,7 +232,7 @@
     const f = e.target.dataset.f; const v = e.target.value;
     const body = {}; body[f] = (f === 'name' || f === 'menu') ? v : v ? +v : null;
     e.target.blur();
-    act(`/api/admin/participants/${row.dataset.p}`, 'PATCH', body, f === 'table_id' ? (v ? `Assigned to Team ${tableById(+v).number}` : 'Unassigned') : 'Saved');
+    act(`/api/admin/participants/${row.dataset.p}`, 'PATCH', body, f === 'table_id' ? (v ? `Assigned to Table ${tableById(+v).number}` : 'Unassigned') : 'Saved');
   });
   $('tab-seating').addEventListener('click', (e) => {
     const b = e.target.closest('[data-delp]'); if (!b) return;
@@ -262,9 +262,9 @@
     const w = $('baseWarn'); w.classList.toggle('hidden', !local);
     w.innerHTML = `QR codes currently point to <b>${esc(S.baseUrl)}</b> (a development address). Open this dashboard from the published URL — or set <code>PUBLIC_BASE_URL</code> — before printing.`;
     $('qrCards').innerHTML = S.tables.map((t) => `<div class="qcard" data-t="${t.id}">
-      <div style="display:flex;justify-content:space-between;align-items:center"><h3 style="font-size:22px;color:var(--champagne)">Team ${t.number}</h3>
+      <div style="display:flex;justify-content:space-between;align-items:center"><h3 style="font-size:22px;color:var(--champagne)">Table ${t.number}</h3>
         <span class="status-pill st-Waiting">${ideasOf(t.id).length} ideas</span></div>
-      <div class="qimg"><img src="/api/admin/qr/${t.id}.png?v=${t.token.slice(0, 6)}" alt="QR code for Team ${t.number}" loading="lazy"></div>
+      <div class="qimg"><img src="/api/admin/qr/${t.id}.png?v=${t.token.slice(0, 6)}" alt="QR code for Table ${t.number}" loading="lazy"></div>
       <div class="url">${esc(t.url)}</div>
       <div class="row"><button class="btn btn-sm btn-gold" data-dl>Download PNG</button><button class="btn btn-sm" data-copyurl>Copy URL</button><a class="btn btn-sm" href="${esc(t.url)}" target="_blank" rel="noopener">Open</a></div>
       <div class="row">
@@ -283,11 +283,11 @@
   $('qrCards').addEventListener('click', (e) => {
     const card = e.target.closest('[data-t]'); if (!card) return;
     const t = tableById(+card.dataset.t);
-    if (e.target.closest('[data-copyurl]')) copyText(t.url, `Team ${t.number} URL`);
+    if (e.target.closest('[data-copyurl]')) copyText(t.url, `Table ${t.number} URL`);
     if (e.target.closest('[data-dl]')) downloadCard(t);
     if (e.target.closest('[data-lock]')) act(`/api/admin/tables/${t.id}`, 'PATCH', { locked: !t.locked }, t.locked ? 'Reopened' : 'Locked');
-    if (e.target.closest('[data-regen]') && confirm(`Create a NEW link for Team ${t.number}? The old QR code will stop working (the song is kept).`)) act(`/api/admin/tables/${t.id}/regenerate`, 'POST', undefined, 'New link created — reprint this QR');
-    if (e.target.closest('[data-deltable]') && confirm(`Delete Team ${t.number}? Its song is deleted and its guests become unassigned.`)) act(`/api/admin/tables/${t.id}`, 'DELETE', undefined, 'Table deleted');
+    if (e.target.closest('[data-regen]') && confirm(`Create a NEW link for Table ${t.number}? The old QR code will stop working (the song is kept).`)) act(`/api/admin/tables/${t.id}/regenerate`, 'POST', undefined, 'New link created — reprint this QR');
+    if (e.target.closest('[data-deltable]') && confirm(`Delete Table ${t.number}? Its song is deleted and its guests become unassigned.`)) act(`/api/admin/tables/${t.id}`, 'DELETE', undefined, 'Table deleted');
   });
   $('addTable').addEventListener('click', () => act('/api/admin/tables', 'POST', {}, 'Table added'));
 
@@ -307,7 +307,7 @@
     g.letterSpacing = '0px'; g.fillStyle = '#F3E6C8'; g.font = 'italic 500 84px "Playfair Display"'; g.fillText('Let\u2019s Make a Song!', W / 2, 400);
     g.fillStyle = '#fff'; roundRect(g, W / 2 - 360, 460, 720, 720, 24); g.fill();
     g.drawImage(qr, W / 2 - 340, 480, 680, 680);
-    g.fillStyle = '#F3E6C8'; g.font = '500 120px "Playfair Display"'; g.fillText('Team ' + t.number, W / 2, 1340);
+    g.fillStyle = '#F3E6C8'; g.font = '500 120px "Playfair Display"'; g.fillText('Table ' + t.number, W / 2, 1340);
     if (t.name) { g.fillStyle = '#D5B26A'; g.font = 'italic 44px "Playfair Display"'; g.fillText(t.name, W / 2, 1400); }
     g.fillStyle = '#B9C9CC'; g.font = '400 30px Mulish'; g.fillText('Scan & add your idea', W / 2, t.name ? 1470 : 1430);
     return c;

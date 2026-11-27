@@ -44,7 +44,7 @@
 
   <main class="admin">
     <section class="stats">
-      <div class="stat"><b id="sTables">–</b><span>Teams</span></div>
+      <div class="stat"><b id="sTables">–</b><span>Tables</span></div>
       <div class="stat"><b id="sSongs">–</b><span>Ideas received</span></div>
       <div class="stat"><b id="sGuests">–</b><span>Guests seated</span></div>
       <div class="stat wide"><span>Songs ready</span><div id="sDone" class="chips"></div><span style="margin-top:8px">In progress</span><div id="sWait" class="chips"></div></div>
@@ -87,7 +87,7 @@
     <!-- SEATING -->
     <section id="tab-seating" class="tab hidden">
       <div class="toolbar">
-        <h2>Seating &amp; teams <span class="tiny" style="font-family:var(--font-body)">— recorded manually from the paper-card draw</span></h2>
+        <h2>Seating &amp; tables <span class="tiny" style="font-family:var(--font-body)">— recorded manually from the paper-card draw</span></h2>
         <div class="tb-actions">
           <a class="btn btn-sm" href="/api/admin/export/seating.csv">Export CSV</a>
           <button class="btn btn-sm" onclick="window.print()">Print plan</button>
@@ -118,9 +118,9 @@
     <!-- TABLES & QR -->
     <section id="tab-qr" class="tab hidden">
       <div class="toolbar">
-        <h2>Teams &amp; QR codes</h2>
+        <h2>Tables</h2>
         <div class="tb-actions">
-          <button class="btn btn-sm" id="addTable">+ Add team</button>
+          <button class="btn btn-sm" id="addTable">+ Add table</button>
           <a class="btn btn-sm btn-gold" href="/admin/print-qr" target="_blank" rel="noopener">Print / save all QR codes</a>
         </div>
       </div>

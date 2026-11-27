@@ -13,7 +13,7 @@
   let me = +ls.get(ME) || null;      // selected guest (participant id)
   let free = !me && !!ls.get(KEY);   // "not on the list" mode
   let st = null, people = [], editing = false, lang = '';
-  const LANG = { it: '🇮🇹 Italiano', en: '🇬🇧 English', es: '🇪🇸 Español' };
+  const LANG = { it: '🇮🇹 Italiano', en: '🇺🇸 English (North American)', es: '🇲🇽 Español (Latin American)', gsw: '🇨🇭 Schwiizerdütsch (Swiss German)' };
   const setLang = (l) => { lang = l || ''; document.querySelectorAll('#langs [data-l]').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.l === lang))); };
   document.getElementById('langs').addEventListener('click', (e) => { const b = e.target.closest('[data-l]'); if (b) setLang(b.dataset.l); });
   const show = (v) => { ['loading', 'fatal', 'whoView', 'formView', 'doneView', 'songView'].forEach((x) => $(x).classList.toggle('hidden', x !== v)); $('personBar').classList.toggle('hidden', !me || ['whoView', 'loading', 'fatal'].includes(v)); };
