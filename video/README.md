@@ -40,7 +40,7 @@ Live mode (backup for the evening): serve the repo root over http (e.g. `npx htt
 | 0:18–0:31 | Ampolla e bigliettino… anche i CEO | On "ampolla" the jar appears and a shower of folded tickets drops in; the jar is shaken and a ticket is drawn onto table 2 of the floor plan with the three real tables (18, 9, 12 seats); the chairs fill; on "anche i CEO": "Nessuno escluso!" and nine name tickets (Siro, Enrico, Walter, Michele, Emanuele, Morys, Gianluca, Paolo, Edoardo) try to run away, then go into the ampolla one by one |
 | 0:31–0:38 | ¡Bienvenida especial a Naimo y Sandra… Matteo! | Waving red-gold ribbon, three name cards flip in on each name |
 | 0:38–0:41 | E ora tocca a voi: QR code | Table card (Tavolo 2) with a stylised QR that lights up and gets scanned |
-| 0:41–0:50 | Scansionatelo, nome, storia, stile | Phone with the app form (LFG+Zest and LFA logos): name chosen, story typed, "Serenata" selected, "Invia" |
+| 0:41–0:50 | Scansionatelo, nome, storia, stile | Phone with the app (LFG+Zest and LFA logos): "Chi sei?" name list → personal area "Ciao Michele!" with your menu, your table, your song → story typed, "Serenata" selected, "Invia"; steps on the left: scan the QR, choose your name, your area (menu · table · song), a story and a style |
 | 0:50–0:57 | Bastano poche parole… l'AI | Words spiral into a golden AI orb that pulses and emits music notes and an equaliser ring |
 | 0:57–1:14 | Chorus | Big karaoke title, rotating record, floating notes; shooting star on "la vostra idea è già lanciata!" |
 | 1:14–1:19 | Ognuno riceverà la propria canzone… tre finaliste | Wall of 24 songs; three come forward with trophies |

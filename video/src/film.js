@@ -438,33 +438,60 @@
     bursts: [{ t: 40.6, x: 1400, y: 520, n: 50, sp: 380 }],
   });
 
-  // 6 · Telefono: nome, storia, stile
+  // 6 · Telefono: nome → la tua area (menu, tavolo, canzone) → storia e stile
   const STORY = 'La notte in cui la renna del capo si perse sul lago di Lugano…';
   const STYLES = ['Pop', 'Blues', 'Serenata', 'Swing', 'Rock', 'Lirica'];
+  const LIST = ['Siro', 'Enrico', 'Walter', 'Michele', 'Emanuele', 'Morys', 'Gianluca'];
+  const PICK = 3; // "Michele"
+  const PW = 368; // phone screen inner width
   scene({
     pose: lay(6, { y: 150, z: -100, ry: 10 }), frame: true,
-    html: `${[['1', 'Scansiona il QR', 41.6], ['2', 'Scegli il tuo nome', 43.1], ['3', 'Una storia', 45.6], ['4', 'Uno stile musicale', 48.6]].map(([n, s, tt], i) =>
-        `<div class="abs" data-k="step" data-t="${tt}" style="left:200px;top:${215 + i * 140}px;display:flex;align-items:center;gap:30px">
-          <div style="width:86px;height:86px;border-radius:50%;border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;font:italic 600 50px/1 var(--serif);color:var(--gold)">${n}</div>
-          <div class="disp" style="font-size:58px">${s}</div></div>`).join('')}
+    html: `${[['1', 'Scansiona il QR', '', 41.6], ['2', 'Scegli il tuo nome', '', 43.1], ['3', 'La tua area', 'menu · tavolo · canzone', 44.5], ['4', 'Una storia e uno stile', '', 46.1]].map(([n, s, sub, tt], i) =>
+        `<div class="abs" data-k="step" data-t="${tt}" style="left:200px;top:${205 + i * 150}px;display:flex;align-items:center;gap:30px">
+          <div style="flex:none;width:86px;height:86px;border-radius:50%;border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;font:italic 600 50px/1 var(--serif);color:var(--gold)">${n}</div>
+          <div><div class="disp" style="font-size:58px">${s}</div>${sub ? `<div class="eyebrow" style="margin-top:10px;font-size:20px;color:var(--champagne)">${sub}</div>` : ''}</div></div>`).join('')}
       <div class="abs" data-k="phone" style="left:1180px;top:110px;width:420px;height:820px;border-radius:56px;background:#0a1a1f;padding:16px;box-shadow:0 60px 100px -40px rgba(0,0,0,.9),0 0 0 2px rgba(213,178,106,.4)">
-        <div style="position:relative;width:100%;height:100%;border-radius:42px;overflow:hidden;background:linear-gradient(180deg,#0C3540,#051E25);padding:34px 26px">
-          <div style="display:flex;justify-content:center;align-items:center;gap:18px"><img src="${BRAND}lfg-zest-white.png" style="width:70px;height:70px"><span style="width:1px;height:46px;background:rgba(213,178,106,.6)"></span><img src="${BRAND}lfa-white.png" style="width:70px;height:70px"></div>
-          <div class="eyebrow" style="font-size:12px;text-align:center;margin-top:12px;letter-spacing:.2em">LFG Holding Christmas Battle</div>
-          <div class="disp" style="font:italic 500 40px/1.1 var(--serif);text-align:center;margin-top:10px;color:var(--champagne)">Scrivi la tua <em>canzone!</em></div>
-          <div class="flabel">Il tuo nome</div><div class="field" data-k="name" style="display:flex;justify-content:space-between"><span data-k="nv">Scegli…</span><span style="color:var(--gold)">▾</span></div>
-          <div class="flabel">La tua storia</div><div class="field" style="height:150px"><span data-k="story"></span><span data-k="caret" style="color:var(--gold)">|</span></div>
-          <div class="flabel">Stile musicale</div><div>${STYLES.map((s) => `<span class="chip" data-k="chip">${s}</span>`).join('')}</div>
-          <div data-k="send" style="margin-top:12px;border-radius:14px;background:linear-gradient(90deg,#B0852F,#D5B26A);color:#1a1206;font:800 22px/56px var(--sans);text-align:center;letter-spacing:.12em">INVIA ✦</div>
+        <div style="position:relative;width:100%;height:100%;border-radius:42px;overflow:hidden;background:linear-gradient(180deg,#0C3540,#051E25)">
+          <div style="position:absolute;left:0;right:0;top:30px;display:flex;justify-content:center;align-items:center;gap:18px"><img src="${BRAND}lfg-zest-white.png" style="width:64px;height:64px"><span style="width:1px;height:42px;background:rgba(213,178,106,.6)"></span><img src="${BRAND}lfa-white.png" style="width:64px;height:64px"></div>
+          <div class="eyebrow" style="position:absolute;left:0;right:0;top:106px;font-size:12px;text-align:center;letter-spacing:.2em">LFG Holding Christmas Battle</div>
+          <div style="position:absolute;left:0;top:140px;width:${PW * 3}px;bottom:0" data-k="pages">
+            <div style="position:absolute;left:0;top:0;width:${PW}px;padding:10px 24px">
+              <div class="disp" style="font:italic 500 40px/1.1 var(--serif);text-align:center;color:var(--champagne)">Chi <em>sei?</em></div>
+              <div style="margin-top:18px;height:520px;overflow:hidden"><div data-k="list">${LIST.map((n) => `<div data-k="row" style="display:flex;justify-content:space-between;align-items:center;padding:0 18px;height:62px;margin-bottom:10px;border-radius:14px;border:2px solid rgba(213,194,154,.22);background:rgba(5,30,37,.6);font:600 24px/1 var(--sans);color:var(--text)"><span>${n}</span><span data-k="ck" style="color:#1a1206;font-weight:800;opacity:0">✓</span></div>`).join('')}</div></div>
+            </div>
+            <div style="position:absolute;left:${PW}px;top:0;width:${PW}px;padding:10px 24px">
+              <div class="eyebrow" style="font-size:13px;text-align:center">La tua area</div>
+              <div class="disp" style="font:italic 500 44px/1.1 var(--serif);text-align:center;color:var(--champagne);margin-top:10px">Ciao <em>${LIST[PICK]}!</em></div>
+              ${[['Il tuo menu', 'Rivedi la tua scelta'], ['Il tuo tavolo', 'Tavolo 2'], ['La tua canzone', 'In arrivo…']].map(([l, v]) => `<div data-k="area" style="margin-top:22px;padding:18px 20px;border-radius:16px;border:2px solid rgba(213,178,106,.55);border-left:8px solid var(--gold);background:rgba(16,58,68,.9)">
+                <div style="font:800 14px/1 var(--sans);letter-spacing:.22em;text-transform:uppercase;color:var(--gold)">${l}</div>
+                <div style="font:italic 500 34px/1.15 var(--serif);color:var(--champagne);margin-top:10px">${v}</div></div>`).join('')}
+            </div>
+            <div style="position:absolute;left:${PW * 2}px;top:0;width:${PW}px;padding:10px 24px">
+              <div class="disp" style="font:italic 500 38px/1.1 var(--serif);text-align:center;color:var(--champagne)">Scrivi la tua <em>canzone!</em></div>
+              <div class="flabel">La tua storia</div><div class="field" style="height:170px"><span data-k="story"></span><span data-k="caret" style="color:var(--gold)">|</span></div>
+              <div class="flabel">Stile musicale</div><div>${STYLES.map((s) => `<span class="chip" data-k="chip">${s}</span>`).join('')}</div>
+              <div data-k="send" style="margin-top:14px;border-radius:14px;background:linear-gradient(90deg,#B0852F,#D5B26A);color:#1a1206;font:800 22px/56px var(--sans);text-align:center;letter-spacing:.12em">INVIA ✦</div>
+            </div>
+          </div>
         </div></div>`,
     update(r, t) {
       $$(r, 'step').forEach((s) => { const t0 = +s.dataset.t, p = eo(t, t0, t0 + .6); st(s, p, `translateX(${(1 - p) * -60}px)`); });
       const ph = eb(t, 41.4, 42.6);
       st($(r, 'phone'), cl(ph * 1.5), `translate3d(0,${(1 - ph) * 300 + Math.sin(t * 1.2) * 10}px,${(1 - ph) * -600}px) rotateY(${-16 + Math.sin(t * .7) * 4}deg) rotateX(${5 + Math.sin(t * .5) * 2}deg)`);
-      const nm = t > 43.85; $(r, 'nv').textContent = nm ? 'Mario Rossi' : 'Scegli…'; $(r, 'nv').style.color = nm ? '#F3E6C8' : '#8299A0';
-      $(r, 'name').style.borderColor = (t > 43.4 && t < 44.6) ? GOLD : '';
-      const n = Math.floor(STORY.length * pr(t, 45.7, 48.3)); $(r, 'story').textContent = STORY.slice(0, n);
-      $(r, 'caret').style.opacity = (t > 45.5 && t < 49 && Math.floor(t * 3) % 2 === 0) ? 1 : 0;
+      // pages: name list → personal area → story & style
+      const pg = ep(t, 44.25, 44.85) + ep(t, 45.95, 46.55);
+      $(r, 'pages').style.transform = `translateX(${-pg * PW}px)`;
+      $(r, 'list').style.transform = `translateY(${-ep(t, 42.6, 43.5) * 60}px)`;
+      $$(r, 'row').forEach((row, i) => {
+        const on = i === PICK && t > 43.8;
+        row.style.background = on ? 'linear-gradient(90deg,#B0852F,#D5B26A)' : '';
+        row.style.color = on ? '#1a1206' : ''; row.style.borderColor = on ? GOLD : '';
+        row.style.boxShadow = on ? `0 0 ${30 * eo(t, 43.8, 44.1)}px rgba(235,203,134,.6)` : '';
+        $(row, 'ck').style.opacity = on ? 1 : 0;
+      });
+      $$(r, 'area').forEach((a, i) => { const p = eb(t, 44.75 + i * .3, 45.25 + i * .3); st(a, cl(p * 1.4), `translateX(${(1 - p) * 60}px)`); });
+      const n = Math.floor(STORY.length * pr(t, 46.6, 48.5)); $(r, 'story').textContent = STORY.slice(0, n);
+      $(r, 'caret').style.opacity = (t > 46.5 && t < 49 && Math.floor(t * 3) % 2 === 0) ? 1 : 0;
       $$(r, 'chip').forEach((c, i) => { c.classList.toggle('on', i === 2 && t > 49.4); });
       $(r, 'send').style.boxShadow = t > 50.05 ? `0 0 ${40 * eo(t, 50.05, 50.4)}px rgba(235,203,134,.8)` : 'none';
     },
