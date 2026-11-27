@@ -15,6 +15,7 @@
   .wrap.home { max-width: 1040px; }
   .film { margin: 4px 0 22px; }
   .film video { display: block; width: 100%; aspect-ratio: 16 / 9; background: #051E25; border-radius: 12px; border: 1px solid var(--line); box-shadow: 0 30px 80px -30px rgba(0,0,0,.8), 0 0 0 1px rgba(213,178,106,.15); }
+  .film video::cue { background: rgba(5, 30, 37, .78); color: #F3E6C8; font-family: 'Mulish', sans-serif; font-size: 18px; line-height: 1.35; }
   .film-cap { text-align: center; color: var(--text-2); font-size: 14px; margin: 10px 0 0; }
   .film-cap em { font-family: var(--font-display); color: var(--champagne); font-size: 17px; }
   .wrap.home > .card { max-width: 640px; margin-left: auto; margin-right: auto; }
@@ -36,10 +37,11 @@
     <hr class="gold-rule">
   </section>
   <section class="film fade-in">
-    <video id="film" controls playsinline preload="metadata" poster="/media/la-vostra-idea-e-gia-lanciata.jpg">
+    <video id="film" controls playsinline preload="metadata" crossorigin="anonymous" poster="/media/la-vostra-idea-e-gia-lanciata.jpg">
       <source src="/media/la-vostra-idea-e-gia-lanciata.mp4" type="video/mp4">
+      <track kind="subtitles" srclang="en" label="English" src="/media/la-vostra-idea-e-gia-lanciata.en.vtt" default>
     </video>
-    <p class="film-cap"><span class="eyebrow">The opening song</span> <em>La vostra idea è già lanciata</em> · 2:25</p>
+    <p class="film-cap"><span class="eyebrow">The opening song</span> <em>La vostra idea è già lanciata</em> · 2:25 · English subtitles (CC)</p>
   </section>
   <section class="card fade-in" style="text-align:center">
     <p class="eyebrow">Christmas Music Battle</p>
