@@ -68,7 +68,13 @@
   if (navEl) {
     const active = navEl.dataset.active;
     const tab = (id, href, icon, label) => `<a class="navtab ${active === id ? 'on' : ''}" href="${href}" ${active === id ? 'aria-current="page"' : ''}><span>${icon}</span>${label}</a>`;
-    navEl.innerHTML = tab('home', '/', '🏠', 'Home') + tab('me', location.pathname.startsWith('/sing/') ? location.pathname : '/me', '✍️', 'My page') + tab('karaoke', '/karaoke', '🎤', 'Karaoke');
+    const draw = (admin) => {
+      navEl.innerHTML = tab('home', '/', '🏠', 'Home') + tab('me', location.pathname.startsWith('/sing/') ? location.pathname : '/me', '✍️', 'My page') + tab('karaoke', '/karaoke', '🎤', 'Karaoke')
+        + (admin ? tab('admin', '/admin', '⚙️', 'Admin') : '');
+    };
+    draw(active === 'admin');
+    // The organizer is also a guest: same menu, plus an Admin tab once signed in.
+    if (active !== 'admin') fetch('/api/admin/me', { credentials: 'same-origin' }).then((r) => r.json()).then((d) => { if (d.admin) draw(true); }).catch(() => {});
   }
   window.esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   window.clen = (s) => Array.from(s || '').length;

@@ -166,3 +166,7 @@
 #tab-qr .qimg, #tab-qr .url, #tab-qr [data-dl], #tab-qr [data-copyurl], #tab-qr a[target], #tab-qr [data-lock], #tab-qr [data-regen], #tab-qr #baseWarn, #tab-qr .tb-actions a { display: none !important; }
 @media (max-width: 900px) { .evbar { grid-template-columns: 110px 1fr; } .evstats { grid-column: 1 / -1; } .fslots { grid-template-columns: 1fr; } .ent-det { grid-template-columns: 1fr; } .ent-row { grid-template-columns: 48px 1fr auto; } .ent-acts { grid-column: 1 / -1; justify-content: flex-start; } }
 .guest-table td:nth-child(4) { min-width: 180px; }
+
+/* guest menu on top of the dashboard (the organizer is a guest too) */
+.admin-nav { position: relative; z-index: 21; margin: 0; padding: 10px 12px 2px; background: rgba(5, 30, 37, .96); flex-wrap: wrap; }
+@media print { .admin-nav { display: none !important; } }
