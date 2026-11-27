@@ -452,6 +452,7 @@ async function setting(key) { const { rows } = await q('SELECT value FROM settin
 async function setSetting(key, value) { await q('INSERT INTO settings (key, value) VALUES ($1,$2) ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value', [key, String(value)]); }
 async function eventToken() { let t = await setting('event_token'); if (!t) { t = newToken(); await setSetting('event_token', t); } return t; }
 async function eventOpen() { return (await setting('entries_open')) !== 'false'; }
+async function finalRevealed() { return (await setting('final_revealed')) === 'true'; }
 async function checkEventToken(tok) { const t = await eventToken(); return typeof tok === 'string' && tok.length === t.length && crypto.timingSafeEqual(Buffer.from(tok), Buffer.from(t)); }
 
 // Effort Score (0–100): what the guest wrote (up to 70, computed here) + care/originality judged by the composer (up to 30).
@@ -494,10 +495,10 @@ async function readEntry(b) {
   for (const k of ['name', 'title', 'lyrics', 'style']) if (charLen(d[k]) > ELIM[k]) return { err: `${k[0].toUpperCase() + k.slice(1)} is too long (max ${ELIM[k]} characters).` };
   return { d };
 }
-function guestSong(e) {
+function guestSong(e, revealed) {
   if (!e || e.hidden || e.status !== 'Ready') return null;
   const c = clipOf(e.production); if (!c) return null;
-  return { id: e.id, title: e.song_title || e.title, lyrics: e.song_lyrics || e.lyrics, note: e.ai_note, clip: c, finalist: e.finalist };
+  return { id: e.id, title: e.song_title || e.title, lyrics: e.song_lyrics || e.lyrics, note: e.ai_note, clip: c, finalist: !!(revealed && e.finalist) };
 }
 
 app.get('/api/s/:token', wrap(async (req, res) => {
@@ -505,7 +506,7 @@ app.get('/api/s/:token', wrap(async (req, res) => {
   if (!(await checkEventToken(req.params.token))) return bad(res, 'This link is not valid. Please scan the QR code again.', 404);
   const [mine, { rows: members }] = await Promise.all([myEntry(req), q('SELECT id, name FROM participants ORDER BY lower(name)')]);
   res.json({ open: await eventOpen(), members, mine: mine && { id: mine.id, participantId: mine.participant_id, name: mine.name, title: mine.title, lyrics: mine.lyrics, style: mine.style, language: mine.language,
-    status: mine.status, editable: mine.status === 'Received' }, song: guestSong(mine), limits: ELIM, graceMin: GRACE_MIN });
+    status: mine.status, editable: mine.status === 'Received' }, song: guestSong(mine, await finalRevealed()), limits: ELIM, graceMin: GRACE_MIN });
 }));
 app.post('/api/s/:token/entries', wrap(async (req, res) => {
   if (!(await checkEventToken(req.params.token))) return bad(res, 'This link is not valid.', 404);
@@ -543,7 +544,7 @@ app.get('/api/s/:token/p/:pid', wrap(async (req, res) => {
   const p = rows[0]; const e = await personEntry(pid);
   res.json({ open: await eventOpen(), limits: ELIM,
     person: { id: p.id, name: p.name, menu: p.menu, seat: p.seat, table: p.table_number ? { number: p.table_number, name: p.table_name } : null },
-    mine: e && { id: e.id, title: e.title, lyrics: e.lyrics, style: e.style, language: e.language, status: e.status, editable: e.status === 'Received' }, song: guestSong(e) });
+    mine: e && { id: e.id, title: e.title, lyrics: e.lyrics, style: e.style, language: e.language, status: e.status, editable: e.status === 'Received' }, song: guestSong(e, await finalRevealed()) });
 }));
 app.post('/api/s/:token/p/:pid/song', wrap(async (req, res) => {
   if (!(await checkEventToken(req.params.token))) return bad(res, 'This link is not valid.', 404);
@@ -564,19 +565,23 @@ app.post('/api/s/:token/p/:pid/song', wrap(async (req, res) => {
 // Public karaoke: finalists first, then every other finished song.
 app.get('/api/karaoke', wrap(async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
+  const revealed = await finalRevealed();
   const { rows } = await q("SELECT * FROM entries WHERE status='Ready' AND hidden=FALSE ORDER BY finalist DESC, id");
-  const songs = rows.map((e) => ({ id: e.id, name: e.name, title: e.song_title || e.title, lyrics: e.song_lyrics || e.lyrics, note: e.ai_note, finalist: e.finalist, clip: clipOf(e.production) })).filter((x) => x.clip);
-  res.json({ songs });
+  const songs = rows.map((e) => ({ id: e.id, name: e.name, title: e.song_title || e.title, lyrics: e.song_lyrics || e.lyrics, note: e.ai_note,
+    finalist: !!(revealed && e.finalist), clip: clipOf(e.production) })).filter((x) => x.clip)
+    .sort((x, y) => (y.finalist - x.finalist) || (x.id - y.id));
+  res.json({ final: { revealed, pending: !revealed && rows.some((e) => e.finalist) }, songs });
 }));
 
 // ---- admin
 app.get('/api/admin/v4', wrap(async (req, res) => {
   const [{ rows }, { rows: ps }] = await Promise.all([q('SELECT * FROM entries ORDER BY id'), q('SELECT id, name, table_id, menu FROM participants ORDER BY lower(name)')]);
   const tok = await eventToken();
-  res.json({ event: { open: await eventOpen(), url: `${baseUrl(req)}/sing/${tok}`, token: tok }, entries: rows.map(entryOut), participants: ps, limits: ELIM, graceMin: GRACE_MIN });
+  res.json({ event: { open: await eventOpen(), finalRevealed: await finalRevealed(), url: `${baseUrl(req)}/sing/${tok}`, token: tok }, entries: rows.map(entryOut), participants: ps, limits: ELIM, graceMin: GRACE_MIN });
 }));
 app.patch('/api/admin/event', wrap(async (req, res) => {
   if ('open' in (req.body || {})) await setSetting('entries_open', req.body.open ? 'true' : 'false');
+  if ('finalRevealed' in (req.body || {})) await setSetting('final_revealed', req.body.finalRevealed ? 'true' : 'false');
   res.json({ ok: true });
 }));
 app.post('/api/admin/event/regenerate', wrap(async (req, res) => { await setSetting('event_token', newToken()); res.json({ ok: true }); }));

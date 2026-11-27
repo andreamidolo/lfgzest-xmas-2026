@@ -26,6 +26,10 @@
   .kbody pre { white-space: pre-wrap; font: inherit; font-size: 16px; line-height: 1.6; margin: 10px 0 0; color: var(--text); }
   .kbody .expl { font-size: 14px; color: var(--text-2); }
   .empty { text-align: center; padding: 40px 16px; }
+  .finhead { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .finhead .sect { margin: 0; }
+  .teaser { grid-column: 1 / -1; text-align: center; border-color: var(--gold); }
+  .teaser h2 { color: var(--champagne); font-size: 30px; margin-top: 6px; font-style: italic; }
   .sect { grid-column: 1 / -1; color: var(--champagne); font-size: 28px; margin-top: 10px; }
   .kfin { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold), 0 20px 60px -20px rgba(213,178,106,.5); }
 </style>
@@ -45,11 +49,12 @@
 <script src="/common.js"></script>
 <script>
 (function () {
-  let sig = '';
+  let sig = '', isAdmin = false;
+  fetch('/api/admin/me', { credentials: 'same-origin' }).then((r) => r.json()).then((d) => { isAdmin = !!d.admin; sig = ''; load(); }).catch(() => {});
   async function load() {
     if ([...document.querySelectorAll('audio')].some((a) => !a.paused)) return; // never interrupt playback
     let r; try { r = await api('/api/karaoke'); } catch (e) { return; }
-    const s = JSON.stringify(r.songs.map((x) => [x.id, x.title, x.clip.id, x.finalist])); if (s === sig) return; sig = s;
+    const s = JSON.stringify([r.final, r.songs.map((x) => [x.id, x.title, x.clip.id, x.finalist])]); if (s === sig) return; sig = s;
     const el = document.getElementById('list');
     if (!r.songs.length) { el.innerHTML = '<div class="card empty" style="grid-column:1/-1"><div class="star" style="font-size:40px;color:var(--gold)">✦</div><h2 style="color:var(--champagne);margin-top:8px">The songs are in the studio</h2><p class="muted">They will appear here as soon as they are ready. Stay tuned!</p></div>'; return; }
     const card = (x) => `<article class="kcard ${x.finalist ? 'kfin' : ''}">
@@ -61,7 +66,11 @@
         <details><summary>Lyrics</summary><pre>${esc(x.lyrics.replace(/^\s*\[[^\]]*\]\s*$/gm, '').replace(/\n{3,}/g, '\n\n').trim())}</pre></details>
       </div></article>`;
     const fin = r.songs.filter((x) => x.finalist), rest = r.songs.filter((x) => !x.finalist);
-    el.innerHTML = (fin.length ? `<h2 class="sect">🏆 The final</h2>${fin.map(card).join('')}${rest.length ? '<h2 class="sect">All the songs</h2>' : ''}` : '') + rest.map(card).join('');
+    let html = '';
+    if (r.final.revealed && fin.length) html += `<div class="finhead"><h2 class="sect">🏆 The final</h2>${isAdmin ? '<a class="btn btn-gold" href="/admin/applause">👏 Applause Meter</a>' : ''}</div>${fin.map(card).join('')}`;
+    else if (r.final.pending) html += `<div class="card teaser"><div class="star" style="font-size:34px;color:var(--gold)">✦</div><h2>The final will be revealed soon…</h2><p class="muted">Three songs will compete for the loudest applause of the night.</p></div>`;
+    if (rest.length) html += (html ? '<h2 class="sect">All the songs</h2>' : '') + rest.map(card).join('');
+    el.innerHTML = html;
   }
   load(); setInterval(() => { if (!document.hidden) load(); }, 15000);
 })();

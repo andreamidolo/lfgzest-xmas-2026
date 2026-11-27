@@ -73,6 +73,7 @@
   <span class="tiny" id="srcInfo"></span>
   <span class="tiny">Sync <b id="offTxt">0.0s</b></span>
   <button class="btn btn-sm" id="fs">Full screen</button>
+  <a class="btn btn-sm btn-gold hidden" id="applauseBtn" href="/admin/applause">👏 Applause</a>
 </div>
 <audio id="audio" preload="auto" crossorigin="anonymous"></audio>
 <script src="/common.js"></script>
@@ -98,6 +99,7 @@
     if (en) sub = { title: en.songTitle || en.title || 'Untitled', name: en.name, finalist: en.finalist, lyrics: en.songLyrics || en.lyrics, production: en.production };
   }
   t = sub;
+  if (sub && sub.finalist) fetch('/api/admin/me').then((r) => r.json()).then((d) => { if (d.admin) $('applauseBtn').classList.remove('hidden'); }).catch(() => {});
   if (!sub) { $('title').textContent = 'Song not found'; return; }
   $('title').textContent = sub.title; $('tbl').textContent = (sub.finalist ? '🏆 Finalist · ' : '') + 'by ' + sub.name;
   $('theme').textContent = ''; $('finTbl').textContent = sub.title + ' · ' + sub.name;

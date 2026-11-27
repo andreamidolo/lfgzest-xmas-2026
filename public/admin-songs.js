@@ -19,6 +19,9 @@
     const ev = V.event, es = V.entries;
     $('openBtn').textContent = ev.open ? '🔓 Submissions open · Close' : '🔒 Submissions closed · Reopen';
     $('openBtn').classList.toggle('btn-gold', !ev.open);
+    $('revealBtn').textContent = ev.finalRevealed ? '🔓 Final revealed · Hide' : '🏆 Reveal the final';
+    $('revealBtn').classList.toggle('btn-gold', !ev.finalRevealed);
+    $('revealNote').textContent = ev.finalRevealed ? 'The 3 finalists are visible in the Karaoke and on their phones.' : 'Hidden: nobody sees the finalists (not even on their phone) until you reveal the final.';
     if ($('evUrl').textContent !== ev.url) { $('evUrl').textContent = ev.url; $('evOpen').href = ev.url; $('evQr').src = '/api/admin/event/qr.png?v=' + ev.token.slice(0, 6); }
     const cnt = (f) => es.filter(f).length;
     const stats = [['Songs', es.length], ['Ready', cnt((e) => e.status === 'Ready')], ['In studio', cnt((e) => ['Composed', 'In Production'].includes(e.status))],
@@ -67,6 +70,11 @@
     if ((b = g('data-toggle'))) { const id = +b.closest('[data-e]').dataset.e; open.has(id) ? open.delete(id) : open.add(id); b.closest('.ent').classList.toggle('open'); }
   });
   $('openBtn').addEventListener('click', () => act('/api/admin/event', 'PATCH', { open: !V.event.open }, V.event.open ? 'Submissions closed' : 'Submissions open'));
+  $('revealBtn').addEventListener('click', () => {
+    const on = !V.event.finalRevealed; const n = V.entries.filter((e) => e.finalist).length;
+    if (on && n < 3 && !confirm(`Only ${n} finalist(s) selected. Reveal anyway?`)) return;
+    act('/api/admin/event', 'PATCH', { finalRevealed: on }, on ? '🏆 Final revealed in the Karaoke' : 'Final hidden again');
+  });
   $('autoFinal').addEventListener('click', () => confirm('Replace the finalists with the top 3 finished songs by Effort Score?') && act('/api/admin/entries/finalists/auto', 'POST', undefined, 'Top 3 selected — check and adjust'));
   $('evCopy').addEventListener('click', () => copyText(V.event.url, 'Link'));
   $('evRegen').addEventListener('click', () => confirm('Create a new link? The old QR stops working.') && act('/api/admin/event/regenerate', 'POST', undefined, 'New link — reprint the QR'));
