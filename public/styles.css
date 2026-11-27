@@ -194,3 +194,8 @@ input[type=search] { -webkit-appearance: none; appearance: none; }
 .navtab:hover { border-color: var(--gold); color: var(--champagne); }
 .navtab.on { background: linear-gradient(180deg, #E4C584, #C79E4E); color: #1B1407; border-color: #E8CF97; }
 @media (max-width: 380px) { .navtab { padding: 8px 10px; font-size: 13px; } }
+
+/* LFG Holding is the host of the evening: its logo leads, the two companies follow */
+.holdbar { position: relative; z-index: 1; display: flex; justify-content: center; margin: 6px 0 10px; }
+.holdbar img { height: clamp(30px, 5vh, 52px); width: auto; display: block; }
+.brandbar img { height: 40px; }

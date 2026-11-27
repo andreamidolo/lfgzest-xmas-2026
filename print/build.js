@@ -1,4 +1,4 @@
-// Printables for the LFG+Zest Christmas Dinner 2026 (27.11.2026, Ristorante Arbostora, Morcote).
+// Printables for the LFG Holding Christmas Dinner 2026 (27.11.2026, Ristorante Arbostora, Morcote).
 //   node print/build.js   (needs `npm i` for qrcode + the preinstalled Playwright/Chromium)
 // Output: print/stampa-cena-natale-2026.pdf = name tickets for the draw (one per guest) + table tent cards with the guest-site QR.
 const fs = require('fs');
@@ -132,7 +132,7 @@ function tentFace(t, n, qrSvg, pos, id) {
     <div class="logos">${logo(t, LOGO_ZEST, 'z')}${logo(t, LOGO_LFA, 'a')}</div>
     <div class="row"><div><div class="eyebrow lbl">Tavolo</div><div class="num">${n}</div></div>
       <div class="qrcol"><div class="qr">${qrSvg}</div><div class="cta">Registrati e lascia<br>la tua idea!</div><div class="cta2">Inquadra il QR e scegli il tuo nome:<br>tavolo, menu e la tua canzone.</div></div></div>
-    ${garland(id)}<div class="foot">Christmas Dinner 2026 · LFG+Zest</div></div>`;
+    ${garland(id)}<div class="foot">Christmas Dinner 2026 · LFG Holding</div></div>`;
 }
 function tentsHTML(themeName, qrSvg) {
   const t = THEMES[themeName], dark = themeName === 'scuro';
@@ -170,7 +170,7 @@ function menuHTML(themeName) {
   const rows = GUESTS_DATA.map((g) => ({ ...g, c: g.menu.split(' · ') }));
   const dessert = (rows.find((r) => r.c[3]) || { c: [] }).c[3] || '';
   const head = (title, sub) => `<div class="head"><div><h1>${title}</h1><div class="sub">${sub}</div></div><div class="logos">${logo(t, LOGO_ZEST, 'z')}${logo(t, LOGO_LFA, 'a')}</div></div>`;
-  const foot = (p) => `<div class="foot"><span>LFG+Zest Christmas Dinner 2026 · Ristorante Arbostora, Morcote · 27.11.2026</span><span>${p}</span></div>`;
+  const foot = (p) => `<div class="foot"><span>LFG Holding Christmas Dinner 2026 · Ristorante Arbostora, Morcote · 27.11.2026</span><span>${p}</span></div>`;
   const list = `<section class="page mp">${head('Scelte <em>piatti</em>', `${rows.length} ospiti · in ordine alfabetico (nomi come nell'app)`)}
     <table><thead><tr><th></th><th>Ospite</th>${COURSES.map((c) => `<th>${c}</th>`).join('')}</tr></thead><tbody>
     ${rows.map((r, i) => `<tr><td class="no">${i + 1}</td><td class="n">${r.name}</td><td>${r.c[0] || ''}</td><td>${r.c[1] || ''}</td><td>${r.c[2] || ''}</td></tr>`).join('')}
@@ -185,7 +185,7 @@ function menuHTML(themeName) {
 }
 
 function doc(theme, css, body) {
-  return `<!doctype html><html lang="it"><head><meta charset="utf-8"><title>LFG+Zest Christmas Dinner 2026 · ${theme}</title>
+  return `<!doctype html><html lang="it"><head><meta charset="utf-8"><title>LFG Holding Christmas Dinner 2026 · ${theme}</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Mulish:wght@400;600;700;800&display=block" rel="stylesheet">
 <style>${css}</style></head><body>${body}</body></html>`;
 }

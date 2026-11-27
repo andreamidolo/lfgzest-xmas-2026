@@ -1,4 +1,4 @@
-// LFG+Zest Christmas Dinner 2026 — Music Challenge
+// LFG Holding Christmas Dinner 2026 — Music Challenge
 const express = require('express');
 const path = require('path');
 const crypto = require('crypto');
