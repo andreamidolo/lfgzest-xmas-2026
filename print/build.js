@@ -61,7 +61,7 @@ body { font-family: 'Mulish', sans-serif; color: ${t.ink}; }
 // 38 guests from the menu list "Scelte piatti per partecipante" (Giada cancelled).
 const GUESTS = [
   'Alessandro Brusa Pasquè', 'André Mezzi', 'Andrea Midolo', 'Anna Roggiani', 'Antonio (Tony) Ruberto', 'Barbara Demergazzi',
-  'Cristina Luiselli', 'Edo', 'Elena Perego', 'Emanuele Stauffer', 'Enrico Guagni', 'Gianluca Generali', 'Gianrito Nicodemo',
+  'Cri Luiselli', 'Edo', 'Elena Perego', 'Emanuele Stauffer', 'Enrico Guagni', 'Gianluca Generali', 'Gianrito Nicodemo',
   'Gino', 'Gioele Monopoli', 'Kristina Herceg', 'Lorenzo Scorzolini', 'Massimo Borghesi', 'Matteo Sansaro', 'Michele Menaballi',
   'Michele Scamoni', 'Monica Casillo', 'Morys Cavadini', 'Naimo Schreiber', 'Paolo Panza', 'Pasquale Corvino', 'Patrick Borradori',
   'Philip Örn', 'Riccardo De Marco', 'Rosy Mantia', 'Sandra Rodrigues', 'Siro Spellini', 'Sophie', 'Tommaso Procopio',
