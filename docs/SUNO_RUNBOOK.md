@@ -41,3 +41,8 @@ Never produce hidden entries; never re-produce Ready ones unless the organizer p
 - Measured on 27.11 (test): Suno ≈ 10 s to streaming, ≈ 30 s to complete; word timings ≈ 2 min after that. A guest's song reaches their phone ≈ 3 min (edit window) + ≤ 2 min (loop) + ≈ 1 min.
 - Karaoke: `/karaoke` (finalists first) and `/karaoke/<id>` (big screen, words in time). Organizer preview `/admin/karaoke/<id>`.
 - Applause Meter: `/admin/applause` — measures the 3 finalists, reveals the winner.
+
+## Live final (big screen + every phone)
+- Organizer phone: `/admin/live` → 🎙 Enable microphone → per finalist **▶ Play** (all screens show the song with synced lyrics + English translation; the big screen `/final?screen=1` plays the audio — click "enable sound" once) → **👏 Applause** (3-2-1 + 7 s, the phone measures, the bar rises live on every screen, score saved) → **📊 Scores** → **🏆 Winner**.
+- Guests follow on `/final` (linked from the Karaoke after the reveal); phones are muted, only the big screen plays.
+- When the 3 finalists are chosen, for each one: fetch word timings of the selected version, write a line-by-line **English translation** of `songLyrics` (one entry per sung line, section tags excluded) and, for non-English songs, produce an **English version** on Suno (singable English lyrics, same style + "English vocals"), publish it, then `PUT /api/admin/entries/<id>/english {translation: [...], english: {id, title, duration, image, audioUrl, lyrics}}`.

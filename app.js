@@ -571,7 +571,8 @@ app.get('/api/karaoke', wrap(async (req, res) => {
   const revealed = await finalRevealed();
   const { rows } = await q("SELECT * FROM entries WHERE status='Ready' AND hidden=FALSE ORDER BY finalist DESC, id");
   const songs = rows.map((e) => ({ id: e.id, name: e.name, title: e.song_title || e.title, lyrics: e.song_lyrics || e.lyrics, note: e.ai_note,
-    finalist: !!(revealed && e.finalist), clip: clipOf(e.production) })).filter((x) => x.clip)
+    finalist: !!(revealed && e.finalist), clip: clipOf(e.production), english: revealed && e.finalist ? (parseProd(e.production) || {}).english || null : null,
+    translation: revealed && e.finalist ? parseTr(e.translation) : null })).filter((x) => x.clip)
     .sort((x, y) => (y.finalist - x.finalist) || (x.id - y.id));
   res.json({ final: { revealed, pending: !revealed && rows.some((e) => e.finalist) }, songs });
 }));
@@ -656,6 +657,56 @@ app.put('/api/admin/entries/:id/applause', wrap(async (req, res) => {
 }));
 app.delete('/api/admin/entries-applause', wrap(async (req, res) => { await q('UPDATE entries SET applause_score=NULL, applause_peak=NULL, applause_at=NULL'); res.json({ ok: true }); }));
 
+// ======================================================================
+// Live final ("stage"): the organizer drives it from the phone; the big screen and every guest's
+// phone follow the same state (song with synced lyrics + translation → applause meter → winner).
+// ======================================================================
+const STAGE0 = { mode: 'idle', entryId: null, startedAt: null, measure: null, live: null, winners: null, v: 0 };
+async function getStage() { const s = await setting('stage'); try { return s ? { ...STAGE0, ...JSON.parse(s) } : { ...STAGE0 }; } catch (_) { return { ...STAGE0 }; } }
+async function setStage(patch) { const cur = await getStage(); const nxt = { ...cur, ...patch, v: (cur.v || 0) + 1 }; await setSetting('stage', JSON.stringify(nxt)); return nxt; }
+function parseTr(t) { try { const a = JSON.parse(t || 'null'); return Array.isArray(a) ? a : null; } catch (_) { return null; } }
+function finalistOut(e) {
+  const p = parseProd(e.production) || {};
+  return { id: e.id, name: e.name, title: e.song_title || e.title, lyrics: e.song_lyrics || e.lyrics, language: e.language,
+    translation: parseTr(e.translation), clip: clipOf(p), english: p.english || null, applause: e.applause_score };
+}
+app.get('/api/stage/state', wrap(async (req, res) => { // light endpoint polled by every screen
+  res.setHeader('Cache-Control', 'no-store');
+  const revealed = await finalRevealed();
+  res.json({ now: Date.now(), revealed, stage: revealed ? await getStage() : { ...STAGE0 } });
+}));
+app.get('/api/stage', wrap(async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  const revealed = await finalRevealed();
+  const stage = await getStage();
+  let finalists = [];
+  if (revealed) { const { rows } = await q("SELECT * FROM entries WHERE finalist AND hidden=FALSE AND status='Ready' ORDER BY id"); finalists = rows.map(finalistOut); }
+  res.json({ now: Date.now(), revealed, stage: revealed ? stage : { ...STAGE0 }, finalists });
+}));
+app.put('/api/admin/stage', wrap(async (req, res) => {
+  const b = req.body || {}; const patch = {};
+  if (['idle', 'song', 'applause', 'result', 'winner'].includes(b.mode)) patch.mode = b.mode;
+  if ('entryId' in b) patch.entryId = b.entryId ? parseInt(b.entryId, 10) : null;
+  if (b.start === true) patch.startedAt = Date.now() + 1500; // small lead so every screen starts together
+  if (b.start === null) patch.startedAt = null;
+  if ('measure' in b) patch.measure = b.measure && typeof b.measure === 'object' ? { phase: String(b.measure.phase || ''), at: Date.now() } : null;
+  if ('live' in b) patch.live = b.live && typeof b.live === 'object' ? { level: Math.max(0, Math.min(100, Number(b.live.level) || 0)), avg: Math.max(0, Math.min(100, Number(b.live.avg) || 0)), t: Number(b.live.t) || 0 } : null;
+  if ('winners' in b) patch.winners = Array.isArray(b.winners) ? b.winners.map((x) => parseInt(x, 10)).filter(Boolean) : null;
+  res.json({ ok: true, stage: await setStage(patch) });
+}));
+// English version + line-by-line translation of a finalist (written by the producer)
+app.put('/api/admin/entries/:id/english', wrap(async (req, res) => {
+  const id = parseInt(req.params.id, 10); const b = req.body || {};
+  const { rows } = await q('SELECT production FROM entries WHERE id=$1', [id]); if (!rows[0]) return bad(res, 'Not found', 404);
+  if (Array.isArray(b.translation)) await q('UPDATE entries SET translation=$2 WHERE id=$1', [id, JSON.stringify(b.translation.slice(0, 200).map((x) => String(x || '').slice(0, 300)))]);
+  if (b.english && typeof b.english === 'object') {
+    const p = parseProd(rows[0].production) || { clips: [] };
+    const c = cleanClip(b.english);
+    if (c) { p.english = { ...c, lyrics: String(b.english.lyrics || '').slice(0, 4000) }; await q('UPDATE entries SET production=$2 WHERE id=$1', [id, JSON.stringify(p)]); }
+  }
+  res.json({ ok: true });
+}));
+
 app.use('/api', (req, res) => bad(res, 'Not found', 404));
 
 // ---------- pages ----------
@@ -668,6 +719,8 @@ app.get('/admin', page('admin.html'));
 app.get('/admin/print-qr', page('print-qr.html'));
 app.get('/admin/board', page('board.html'));
 app.get('/admin/applause', page('applause.html'));
+app.get('/admin/live', page('live.html'));
+app.get('/final', page('final.html'));
 app.get('/admin/karaoke/:tableId', page('karaoke.html'));
 app.get('/karaoke', page('karaoke-list.html'));
 app.get('/karaoke/:id', page('karaoke.html'));

@@ -63,12 +63,14 @@
       <div class="kbody">
         <h2>${esc(x.title)}</h2>
         <audio controls preload="none" src="${esc(x.clip.audioUrl)}"></audio>
+        ${x.english ? `<div class="tiny" style="margin-top:-4px">🇺🇸 English version</div><audio controls preload="none" src="${esc(x.english.audioUrl || ('https://cdn1.suno.ai/' + x.english.id + '.mp4'))}"></audio>` : ''}
         <a class="btn ${x.finalist ? 'btn-gold' : ''}" href="/karaoke/${x.id}">▶ Sing along (big screen)</a>
         <details><summary>Lyrics</summary><pre>${esc(x.lyrics.replace(/^\s*\[[^\]]*\]\s*$/gm, '').replace(/\n{3,}/g, '\n\n').trim())}</pre></details>
+        ${x.translation ? `<details><summary>🇺🇸 English translation</summary><pre>${esc(x.translation.join('\n'))}</pre></details>` : ''}
       </div></article>`;
     const fin = r.songs.filter((x) => x.finalist), rest = r.songs.filter((x) => !x.finalist);
     let html = '';
-    if (r.final.revealed && fin.length) html += `<div class="finhead"><h2 class="sect">🏆 The final</h2>${isAdmin ? '<a class="btn btn-gold" href="/admin/applause">👏 Applause Meter</a>' : ''}</div>${fin.map(card).join('')}`;
+    if (r.final.revealed && fin.length) html += `<div class="finhead"><h2 class="sect">🏆 The final</h2><span style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn btn-gold" href="/final">📺 The final — live</a>${isAdmin ? '<a class="btn" href="/admin/live">🎛 Live control</a>' : ''}</span></div>${fin.map(card).join('')}`;
     else if (r.final.pending) html += `<div class="card teaser"><div class="star" style="font-size:34px;color:var(--gold)">✦</div><h2>The final will be revealed soon…</h2><p class="muted">Three songs will compete for the loudest applause of the night.</p></div>`;
     if (rest.length) html += (html ? '<h2 class="sect">All the songs</h2>' : '') + rest.map(card).join('');
     el.innerHTML = html;

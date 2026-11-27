@@ -117,6 +117,7 @@ const MIGRATIONS = [
    )`,
   `ALTER TABLE participants ADD COLUMN IF NOT EXISTS menu TEXT NOT NULL DEFAULT ''`,
   `ALTER TABLE entries ADD COLUMN IF NOT EXISTS language TEXT NOT NULL DEFAULT ''`,
+  `ALTER TABLE entries ADD COLUMN IF NOT EXISTS translation TEXT`,
 ];
 
 // Run migrations over a DIRECT connection (never through PgBouncer).
@@ -141,7 +142,7 @@ async function init() {
     // the app runs single statements only, so no transactions are needed.
     const sql = require('@neondatabase/serverless').neon(url, { fullResults: true });
     impl = { query: async (text, params) => { const r = await sql.query(qualify(text), params || []); return { rows: r.rows }; }, kind: 'neon-http' };
-    const { rows } = await impl.query(`SELECT 1 AS t FROM information_schema.columns WHERE table_schema='${SCHEMA}' AND table_name='entries' AND column_name='language'`);
+    const { rows } = await impl.query(`SELECT 1 AS t FROM information_schema.columns WHERE table_schema='${SCHEMA}' AND table_name='entries' AND column_name='translation'`);
     if (!rows[0]) await migratePostgres();
   } else if (url) {
     const { Pool } = require('pg');
@@ -151,7 +152,7 @@ async function init() {
     }
     impl = { query: (text, params) => pool.query(qualify(text), params), kind: 'postgres', pool };
     // Normally `npm run build` has migrated already; this is a safety net for a fresh database.
-    const { rows } = await impl.query(`SELECT 1 AS t FROM information_schema.columns WHERE table_schema='${SCHEMA}' AND table_name='entries' AND column_name='language'`);
+    const { rows } = await impl.query(`SELECT 1 AS t FROM information_schema.columns WHERE table_schema='${SCHEMA}' AND table_name='entries' AND column_name='translation'`);
     if (!rows[0]) await migratePostgres();
   } else {
     if (process.env.VERCEL) {

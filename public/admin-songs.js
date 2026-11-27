@@ -29,7 +29,7 @@
     $('evStats').innerHTML = stats.map(([l, v]) => `<div><b>${v}</b><span>${l}</span></div>`).join('');
     const fins = es.filter((e) => e.finalist);
     $('fslots').innerHTML = [0, 1, 2].map((i) => { const e = fins[i]; if (!e) return `<div class="fslot"><span class="tiny">Finalist ${i + 1} — pick with ★ below or use “Suggest top 3”</span></div>`;
-      const c = clip(e); return `<div class="fslot on">${c && c.image ? `<img src="${esc(c.image)}" alt="">` : ''}<div><b>${esc(e.songTitle || e.title || 'Untitled')}</b><span class="tiny">${esc(e.name)} · Effort ${e.effort.total}</span>
+      const c = clip(e); return `<div class="fslot on">${c && c.image ? `<img src="${esc(c.image)}" alt="">` : ''}<div><b>${esc(e.songTitle || e.title || 'Untitled')}</b><span class="tiny">${esc(e.name)} · Effort ${e.effort.total}${e.language && e.language !== 'en' ? (e.production && e.production.english ? ' · 🇺🇸 English ✓' : ' · 🇺🇸 English version pending') : ''}</span>
         <div class="row2" style="margin-top:6px"><a class="btn btn-sm" href="/admin/karaoke/${e.id}" target="_blank" rel="noopener">▶ Karaoke</a><button class="btn btn-sm btn-ghost" data-unfin="${e.id}">Remove</button></div></div></div>`; }).join('');
     const list = [...es].sort($('sortBy').value === 'new' ? (a, b) => b.id - a.id : (a, b) => b.effort.total - a.effort.total || a.id - b.id);
     $('entries').innerHTML = list.map((e) => {
