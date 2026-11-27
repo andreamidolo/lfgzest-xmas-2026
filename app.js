@@ -526,6 +526,9 @@ app.put('/api/s/:token/entries/mine', wrap(async (req, res) => {
   res.json({ ok: true });
 }));
 
+// Public navigation: where "My page" lives (nothing here is confidential).
+app.get('/api/nav', wrap(async (req, res) => { res.setHeader('Cache-Control', 'no-store'); res.json({ sing: `/sing/${await eventToken()}` }); }));
+
 // Personal areas: everyone is listed; picking your name opens your area (song, table, menu). Nothing here is confidential.
 app.get('/api/s/:token/people', wrap(async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
@@ -669,6 +672,7 @@ app.get('/admin/karaoke/:tableId', page('karaoke.html'));
 app.get('/karaoke', page('karaoke-list.html'));
 app.get('/karaoke/:id', page('karaoke.html'));
 app.get('/sing/:token', page('sing.html'));
+app.get('/me', wrap(async (req, res) => { res.setHeader('Cache-Control', 'no-store'); res.redirect(302, `/sing/${await eventToken()}`); }));
 app.get('/health', async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   const hasDb = !!findDbUrl();

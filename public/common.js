@@ -63,6 +63,13 @@
     return data;
   };
 
+  // Guest navigation: the same three tabs on Home, My page and Karaoke.
+  const navEl = document.getElementById('nav');
+  if (navEl) {
+    const active = navEl.dataset.active;
+    const tab = (id, href, icon, label) => `<a class="navtab ${active === id ? 'on' : ''}" href="${href}" ${active === id ? 'aria-current="page"' : ''}><span>${icon}</span>${label}</a>`;
+    navEl.innerHTML = tab('home', '/', '🏠', 'Home') + tab('me', location.pathname.startsWith('/sing/') ? location.pathname : '/me', '✍️', 'My page') + tab('karaoke', '/karaoke', '🎤', 'Karaoke');
+  }
   window.esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   window.clen = (s) => Array.from(s || '').length;
 })();
